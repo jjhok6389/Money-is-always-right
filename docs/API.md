@@ -72,7 +72,7 @@ HTTP `401 Unauthorized`
 
 | 이름 | 값 |
 |------|-----|
-| `investmentPropensity` | `stable` (안정형), `neutral` (중립형), `aggressive` (적극형) |
+| `investmentPropensity` | `stable` (안정형), `stable_seeking` (안정추구형), `neutral` (위험중립형), `aggressive` (적극투자형), `very_aggressive` (공격투자형) |
 | `expenseType` | `fixed` (고정비), `variable` (변동비) |
 | `productType` | `deposit` (예금), `saving` (적금) |
 | `category` | `food`, `transport`, `housing`, `telecom`, `shopping`, `leisure`, `medical`, `education`, `savings`, `income`, `other` |
@@ -153,7 +153,7 @@ Prefix: `/api/users`
 | `monthlyIncome` | int | ✅ | 월 소득(원) ≥ 0 |
 | `fixedExpenses` | int | ✅ | 월 고정 지출(원) ≥ 0 |
 | `estimatedMonthlySavings` | int | ✅ | 예상 월 저축 ≥ 0 |
-| `investmentPropensity` | string | ✅ | `stable` \| `neutral` \| `aggressive` |
+| `investmentPropensity` | string | ✅ | `stable` \| `stable_seeking` \| `neutral` \| `aggressive` \| `very_aggressive` |
 | `targetAssetAmount` | int | ✅ | 목표 자산(원) ≥ 0 |
 | `targetYears` | int | ✅ | 1~40 |
 | `goalDescription` | string | ✅ | 목표 설명 |

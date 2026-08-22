@@ -37,12 +37,19 @@ def _add_months(base: datetime, months: int) -> datetime:
     return base.replace(year=year, month=month, day=day)
 
 
+# 위험 수용도가 높아질수록 현금·예금 비중을 낮추고 투자 비중을 높임. 각 행 합계 1.00.
 PORTFOLIO_BY_PROPENSITY: dict[str, list[tuple[str, str, float]]] = {
     "stable": [
         ("cash", "현금·입출금", 0.25),
         ("deposit", "예금", 0.45),
         ("saving", "적금", 0.25),
         ("investment", "투자", 0.05),
+    ],
+    "stable_seeking": [
+        ("cash", "현금·입출금", 0.22),
+        ("deposit", "예금", 0.38),
+        ("saving", "적금", 0.28),
+        ("investment", "투자", 0.12),
     ],
     "neutral": [
         ("cash", "현금·입출금", 0.20),
@@ -51,10 +58,16 @@ PORTFOLIO_BY_PROPENSITY: dict[str, list[tuple[str, str, float]]] = {
         ("investment", "투자", 0.20),
     ],
     "aggressive": [
+        ("cash", "현금·입출금", 0.15),
+        ("deposit", "예금", 0.20),
+        ("saving", "적금", 0.30),
+        ("investment", "투자", 0.35),
+    ],
+    "very_aggressive": [
         ("cash", "현금·입출금", 0.10),
-        ("deposit", "예금", 0.15),
-        ("saving", "적금", 0.25),
-        ("investment", "투자", 0.50),
+        ("deposit", "예금", 0.10),
+        ("saving", "적금", 0.20),
+        ("investment", "투자", 0.60),
     ],
 }
 
@@ -256,9 +269,11 @@ def _recommend_products(
     propensity: str,
 ) -> list[RecommendedProduct]:
     reason_by_propensity = {
-        "stable": "원금 안정성을 우선하는 안정형 성향에 적합합니다.",
-        "neutral": "수익과 안정의 균형을 위해 중기 적립을 권장합니다.",
-        "aggressive": "목표 기간을 활용해 우대금리가 높은 상품을 우선 검토하세요.",
+        "stable": "원금 손실을 허용하지 않는 안정형 성향에 맞는 예금 중심 상품입니다.",
+        "stable_seeking": "원금 손실을 최소화하려는 안정추구형에게 이자 수익이 안정적인 상품입니다.",
+        "neutral": "수익과 안정의 균형을 찾는 위험중립형에게 중기 적립을 권장합니다.",
+        "aggressive": "일정 손실을 감수하는 적극투자형이라면 우대금리가 높은 상품을 우선 검토하세요.",
+        "very_aggressive": "공격투자형에게 예·적금은 안전자산 몫입니다. 목표 기간이 짧은 자금에만 배분하세요.",
     }
     reason = reason_by_propensity.get(propensity, reason_by_propensity["neutral"])
     ranked = sorted(products, key=lambda p: p.bestRate or 0, reverse=True)[:3]

@@ -7,7 +7,7 @@ UserProfile,occupation,string,예,min 1,직업/신분
 UserProfile,monthlyIncome,int,예,≥0,월 소득(원)
 UserProfile,fixedExpenses,int,예,≥0,월 고정 지출(원)
 UserProfile,estimatedMonthlySavings,int,예,≥0,예상 월 저축(원)
-UserProfile,investmentPropensity,string,예,stable|neutral|aggressive,투자 성향
+UserProfile,investmentPropensity,string,예,stable|stable_seeking|neutral|aggressive|very_aggressive,투자 성향
 UserProfile,targetAssetAmount,int,예,≥0,목표 자산(원)
 UserProfile,targetYears,int,예,1~40,목표 기간(년)
 UserProfile,goalDescription,string,예,min 1,목표 설명
