@@ -1,0 +1,17 @@
+항목,내용
+Base URL (로컬),http://localhost:8000
+Swagger,http://localhost:8000/docs
+인증 방식,Authorization: Bearer <Firebase ID Token>
+Content-Type,application/json
+에러 형식,"{ ""detail"": ""한국어 메시지"" }"
+investmentPropensity,stable=안정형 / neutral=중립형 / aggressive=적극형
+expenseType,fixed=고정비 / variable=변동비
+productType,deposit=예금 / saving=적금
+Products source,fss=금감원 실데이터 / mock=모의 데이터
+Coach source,bedrock=AWS Bedrock / fallback=로컬 안내
+월 적립 공식 (시뮬레이션),(소득-지출)×저축률(%)
+복리,월복리
+권역코드 예시,020000=은행 / 030300=저축은행
+관련 문서,docs/API.md
+관련 Jira,YP2026-64
+업데이트,2026-08-22

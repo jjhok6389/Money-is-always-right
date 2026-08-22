@@ -1,0 +1,56 @@
+스키마,필드,타입,필수,제약/값,설명
+UserProfile,uid,string,응답,-,Firebase UID
+UserProfile,email,string,아니오,-,이메일
+UserProfile,displayName,string,예,min 1,이름
+UserProfile,age,int,예,18~100,나이
+UserProfile,occupation,string,예,min 1,직업/신분
+UserProfile,monthlyIncome,int,예,≥0,월 소득(원)
+UserProfile,fixedExpenses,int,예,≥0,월 고정 지출(원)
+UserProfile,estimatedMonthlySavings,int,예,≥0,예상 월 저축(원)
+UserProfile,investmentPropensity,string,예,stable|neutral|aggressive,투자 성향
+UserProfile,targetAssetAmount,int,예,≥0,목표 자산(원)
+UserProfile,targetYears,int,예,1~40,목표 기간(년)
+UserProfile,goalDescription,string,예,min 1,목표 설명
+UserProfile,onboardingCompleted,bool,아니오,default true,온보딩 완료
+UserProfile,createdAt,string,아니오,ISO,생성 시각
+Transaction,id,string,응답,-,거래 ID
+Transaction,date,string,응답,YYYY-MM-DD,거래일
+Transaction,description,string,응답,-,설명
+Transaction,merchant,string,응답,-,가맹점
+Transaction,amount,int,응답,≥0,금액(원)
+Transaction,category,string,응답,food|transport|housing|telecom|shopping|leisure|medical|education|savings|income|other,카테고리 코드
+Transaction,categoryLabel,string,응답,-,카테고리 한글
+Transaction,expenseType,string,응답,fixed|variable,고정/변동
+Transaction,expenseTypeLabel,string,응답,-,고정비/변동비
+Transaction,isIncome,bool,응답,-,소득 여부
+ProductList,source,string,응답,fss|mock,데이터 출처
+ProductList,productType,string,응답,deposit|saving,상품 유형
+ProductList,topFinGrpNo,string,응답,-,금융권역코드
+ProductList,count,int,응답,-,상품 수
+ProductList,message,string,응답,nullable,안내 메시지
+FinancialProduct,companyName,string,응답,-,금융회사명
+FinancialProduct,productName,string,응답,-,상품명
+FinancialProduct,bestRate,float,응답,nullable,최고금리(%)
+FinancialProduct,bestTermMonths,int,응답,nullable,대표 기간(개월)
+DashboardRequest,profile,object,아니오,-,프로필 스냅샷
+DashboardRequest,currentAssets,int,아니오,≥0,현재 자산
+DashboardRequest,debtBalance,int,아니오,≥0,부채 잔액
+DashboardRequest,month,string,아니오,YYYY-MM,소비 기준월
+GoalProgress,gapAmount,int,응답,-,목표까지 남은 금액
+GoalProgress,achievementRate,float,응답,-,달성률(%)
+GoalProgress,monthlySavingsCapacity,int,응답,-,월 저축 여력
+GoalProgress,estimatedAchievementDate,string,응답,nullable,예상 달성일
+GoalProgress,onTrack,bool,응답,-,목표 기간 내 궤도 여부
+SimulationAssumptions,monthlyIncome,int,예,≥0,월 소득
+SimulationAssumptions,monthlyExpenses,int,예,≥0,월 지출
+SimulationAssumptions,savingsRate,float,예,0~100,잉여자금 저축률(%)
+SimulationAssumptions,annualInterestRate,float,예,0~30,연 예상 금리(%)
+SimulationAssumptions,currentAssets,int,아니오,≥0,현재 자산
+SimulationAssumptions,horizonMonths,int,아니오,6~480,시뮬레이션 개월
+SimulationAssumptions,targetAssetAmount,int,아니오,≥0,목표 자산
+CoachChat,message,string,예,1~2000,사용자 메시지
+CoachChat,history,array,아니오,max 20,"{role user|assistant content}"
+CoachChatResponse,reply,string,응답,-,한국어 답변
+CoachChatResponse,source,string,응답,bedrock|fallback,응답 출처
+CoachChatResponse,modelId,string,응답,nullable,Bedrock 모델 ID
+CoachChatResponse,suggestions,array,응답,-,추천 질문
