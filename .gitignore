@@ -17,6 +17,7 @@ backend/.env
 # Build / IDE
 dist/
 build/
+frontend/.vite/
 .DS_Store
 .idea/
 .vscode/
