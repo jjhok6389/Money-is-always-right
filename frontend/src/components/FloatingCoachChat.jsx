@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { sendCoachMessage } from '../services/coachService';
 
@@ -60,7 +60,10 @@ export default function FloatingCoachChat() {
             }
           : null,
       });
-      setMessages((prev) => [...prev, { role: 'assistant', content: response.reply }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: response.reply, toolTrace: response.toolTrace ?? [] },
+      ]);
       setSource(response.source);
       if (response.suggestions?.length) {
         setSuggestions(response.suggestions);
@@ -105,14 +108,27 @@ export default function FloatingCoachChat() {
 
           <div className="coach-messages" ref={listRef}>
             {messages.map((item, index) => (
-              <div
-                key={`${item.role}-${index}`}
-                className={`coach-bubble ${item.role === 'user' ? 'user' : 'assistant'}`}
-              >
-                {item.content}
-              </div>
+              <Fragment key={`${item.role}-${index}`}>
+                {item.toolTrace?.length > 0 && (
+                  <div className="coach-steps" aria-label="에이전트 실행 단계">
+                    {item.toolTrace.map((step, stepIndex) => (
+                      <span
+                        key={`${step.name}-${stepIndex}`}
+                        className={`coach-step ${step.status === 'error' ? 'error' : ''}`}
+                        title={step.summary}
+                      >
+                        <span className="coach-step-label">{step.label}</span>
+                        {step.status === 'error' ? '!' : '✓'}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className={`coach-bubble ${item.role === 'user' ? 'user' : 'assistant'}`}>
+                  {item.content}
+                </div>
+              </Fragment>
             ))}
-            {sending && <div className="coach-bubble assistant">답변을 작성하는 중...</div>}
+            {sending && <div className="coach-bubble assistant">금융 데이터를 조회하고 답변을 만드는 중...</div>}
           </div>
 
           <div className="coach-suggestions">
