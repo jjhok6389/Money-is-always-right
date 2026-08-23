@@ -16,3 +16,7 @@ export function fetchDepositProducts(options = {}) {
 export function fetchSavingProducts(options = {}) {
   return fetchProducts({ ...options, productType: 'saving' });
 }
+
+export function fetchAnnuityProducts(options = {}) {
+  return fetchProducts({ ...options, productType: 'annuity' });
+}

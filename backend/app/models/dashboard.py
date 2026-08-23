@@ -65,7 +65,7 @@ class RoadmapItem(BaseModel):
 
 
 class RecommendedProduct(BaseModel):
-    productType: Literal["deposit", "saving"]
+    productType: Literal["deposit", "saving", "annuity"]
     companyName: str
     productName: str
     bestRate: Optional[float] = None

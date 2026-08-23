@@ -28,7 +28,7 @@ export default function AppHeader() {
               소비 분석
             </Link>
             <Link to="/products" className="nav-link">
-              예·적금
+              금융상품
             </Link>
           </>
         )}

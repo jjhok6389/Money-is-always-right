@@ -24,7 +24,7 @@ Transaction,expenseType,string,응답,fixed|variable,고정/변동
 Transaction,expenseTypeLabel,string,응답,-,고정비/변동비
 Transaction,isIncome,bool,응답,-,소득 여부
 ProductList,source,string,응답,fss|mock,데이터 출처
-ProductList,productType,string,응답,deposit|saving,상품 유형
+ProductList,productType,string,응답,deposit|saving|annuity,상품 유형
 ProductList,topFinGrpNo,string,응답,-,금융권역코드
 ProductList,count,int,응답,-,상품 수
 ProductList,message,string,응답,nullable,안내 메시지

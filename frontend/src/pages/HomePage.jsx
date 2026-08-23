@@ -34,7 +34,7 @@ export default function HomePage() {
               대시보드 보기
             </Link>
             <Link to="/products" className="btn btn-ghost">
-              예·적금 보기
+              예·적금·연금 보기
             </Link>
           </div>
         </section>

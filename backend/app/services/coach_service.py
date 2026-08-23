@@ -51,7 +51,7 @@ SYSTEM_PROMPT = """당신은 'Money is Always Right'의 청년 자산형성 AI �
 당신은 도구(tool)를 사용해 사용자의 실제 금융 데이터를 조회할 수 있습니다.
 추측하지 말고, 수치가 필요하면 반드시 도구를 먼저 호출하세요.
 - 자산·목표 달성률·저축 여력이 필요하면 get_financial_state
-- 예·적금 상품이 필요하면 search_products
+- 예·적금·연금저축 상품이 필요하면 search_products
 - '만약 ~하면' 같은 가정이 나오면 run_scenario_simulation
 - 실행 순서·부채 상환 우선순위가 필요하면 get_roadmap
 필요하면 여러 도구를 연달아 호출한 뒤 종합해서 답하세요.
@@ -181,7 +181,7 @@ async def _run_bedrock_agent(
 
 ROUTING_RULES: list[tuple[str, tuple[str, ...]]] = [
     ("run_scenario_simulation", ("시나리오", "만약", "올리면", "늘리면", "줄이면", "시뮬", "바꾸면", "오르면")),
-    ("search_products", ("적금", "예금", "상품", "추천", "비교", "금리", "가입")),
+    ("search_products", ("적금", "예금", "연금", "상품", "추천", "비교", "금리", "가입")),
     ("get_roadmap", ("로드맵", "계획", "순서", "부채", "대출", "상환", "우선")),
     ("get_financial_state", ("목표", "달성", "기간", "얼마나", "자산", "저축", "소비", "현황")),
 ]
@@ -198,7 +198,13 @@ def _route_tools(message: str) -> list[str]:
 
 def _fallback_params(name: str, message: str) -> dict[str, Any]:
     if name == "search_products":
-        return {"productType": "deposit" if "예금" in message else "saving", "limit": 3}
+        if "연금" in message:
+            product_type = "annuity"
+        elif "예금" in message:
+            product_type = "deposit"
+        else:
+            product_type = "saving"
+        return {"productType": product_type, "limit": 3}
 
     if name == "run_scenario_simulation":
         params: dict[str, Any] = {}

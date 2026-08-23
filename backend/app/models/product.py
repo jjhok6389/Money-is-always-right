@@ -6,7 +6,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-ProductType = Literal["deposit", "saving"]
+ProductType = Literal["deposit", "saving", "annuity"]
 
 
 class ProductOption(BaseModel):

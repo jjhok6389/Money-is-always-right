@@ -2,10 +2,33 @@ import { useEffect, useState } from 'react';
 import AppHeader from '../components/AppHeader';
 import { fetchProducts } from '../services/productService';
 
-const GROUP_OPTIONS = [
-  { value: '020000', label: '은행' },
-  { value: '030300', label: '저축은행' },
-];
+const GROUP_OPTIONS_BY_TYPE = {
+  deposit: [
+    { value: '020000', label: '은행' },
+    { value: '030300', label: '저축은행' },
+  ],
+  saving: [
+    { value: '020000', label: '은행' },
+    { value: '030300', label: '저축은행' },
+  ],
+  annuity: [
+    { value: '050000', label: '보험' },
+    { value: '060000', label: '금융투자' },
+    { value: '020000', label: '은행' },
+  ],
+};
+
+const DEFAULT_GROUP_BY_TYPE = {
+  deposit: '020000',
+  saving: '020000',
+  annuity: '050000',
+};
+
+const PRODUCT_TYPE_LABEL = {
+  deposit: '예금',
+  saving: '적금',
+  annuity: '연금저축',
+};
 
 export default function ProductsPage() {
   const [productType, setProductType] = useState('saving');
@@ -13,6 +36,8 @@ export default function ProductsPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const groupOptions = GROUP_OPTIONS_BY_TYPE[productType] || GROUP_OPTIONS_BY_TYPE.saving;
 
   const load = async () => {
     setLoading(true);
@@ -27,6 +52,11 @@ export default function ProductsPage() {
     }
   };
 
+  const onSelectProductType = (nextType) => {
+    setProductType(nextType);
+    setTopFinGrpNo(DEFAULT_GROUP_BY_TYPE[nextType] || '020000');
+  };
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -38,9 +68,9 @@ export default function ProductsPage() {
       <main className="page-content page-content-xl">
         <section className="hero-panel">
           <p className="eyebrow">Phase 2 · 금감원 Open API</p>
-          <h1>예금 · 적금 상품</h1>
+          <h1>예금 · 적금 · 연금저축</h1>
           <p className="lead">
-            금융감독원 금융상품한눈에 API로 예금·적금 공시 정보를 조회합니다.
+            금융감독원 금융상품한눈에 API로 예금·적금·연금저축 공시 정보를 조회합니다.
             API 키가 없으면 모의 상품 목록이 표시됩니다.
           </p>
         </section>
@@ -50,23 +80,30 @@ export default function ProductsPage() {
             <button
               type="button"
               className={productType === 'saving' ? 'tab active' : 'tab'}
-              onClick={() => setProductType('saving')}
+              onClick={() => onSelectProductType('saving')}
             >
               적금
             </button>
             <button
               type="button"
               className={productType === 'deposit' ? 'tab active' : 'tab'}
-              onClick={() => setProductType('deposit')}
+              onClick={() => onSelectProductType('deposit')}
             >
               예금
+            </button>
+            <button
+              type="button"
+              className={productType === 'annuity' ? 'tab active' : 'tab'}
+              onClick={() => onSelectProductType('annuity')}
+            >
+              연금저축
             </button>
           </div>
 
           <label>
             금융권역
             <select value={topFinGrpNo} onChange={(event) => setTopFinGrpNo(event.target.value)}>
-              {GROUP_OPTIONS.map((option) => (
+              {groupOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -86,7 +123,7 @@ export default function ProductsPage() {
           <>
             <p className={`source-banner ${data.source === 'fss' ? 'live' : 'mock'}`}>
               {data.source === 'fss'
-                ? `금감원 실시간 공시 · ${data.count}개 상품`
+                ? `금감원 실시간 공시 · ${PRODUCT_TYPE_LABEL[productType] || '상품'} ${data.count}개`
                 : data.message || `모의 데이터 · ${data.count}개 상품`}
             </p>
 
@@ -97,7 +134,7 @@ export default function ProductsPage() {
                   <h2>{product.productName}</h2>
                   <dl>
                     <div>
-                      <dt>최고금리</dt>
+                      <dt>{productType === 'annuity' ? '공시수익률' : '최고금리'}</dt>
                       <dd>
                         {product.bestRate != null ? `${product.bestRate.toFixed(2)}%` : '-'}
                       </dd>

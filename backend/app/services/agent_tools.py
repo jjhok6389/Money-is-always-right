@@ -84,7 +84,7 @@ async def _get_financial_state(_params: dict[str, Any], ctx: AgentContext) -> di
 
 async def _search_products(params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
     product_type = params.get("productType")
-    if product_type not in ("deposit", "saving"):
+    if product_type not in ("deposit", "saving", "annuity"):
         product_type = "saving"
     limit = max(1, min(int(params.get("limit") or 3), 5))
 
@@ -200,23 +200,22 @@ TOOL_SPECS: list[dict[str, Any]] = [
     {
         "toolSpec": {
             "name": "search_products",
-            "description": "금융감독원 공시 예·적금 상품을 최고금리 순으로 검색한다.",
+            "description": "금융감독원 공시 예·적금·연금저축 상품을 최고금리(또는 공시수익률) 순으로 검색한다.",
             "inputSchema": {
                 "json": {
                     "type": "object",
                     "properties": {
                         "productType": {
                             "type": "string",
-                            "enum": ["deposit", "saving"],
-                            "description": "deposit=정기예금, saving=적금. 기본값 saving",
+                            "enum": ["deposit", "saving", "annuity"],
+                            "description": "deposit=정기예금, saving=적금, annuity=연금저축. 기본값 saving",
                         },
                         "limit": {"type": "integer", "description": "반환 개수 1~5, 기본값 3"},
                     },
                 }
             },
         }
-    },
-    {
+    },    {
         "toolSpec": {
             "name": "run_scenario_simulation",
             "description": (
@@ -289,7 +288,8 @@ def summarize(name: str, result: dict[str, Any]) -> str:
             f"월 저축여력 {result['monthlySavingsCapacity']:,}원"
         )
     if name == "search_products":
-        type_label = "예금" if result["productType"] == "deposit" else "적금"
+        type_labels = {"deposit": "예금", "saving": "적금", "annuity": "연금저축"}
+        type_label = type_labels.get(result["productType"], "상품")
         source_label = "금감원 공시" if result["source"] == "fss" else "모의 데이터"
         return f"{type_label} {result['count']}건 조회 ({source_label})"
     if name == "run_scenario_simulation":

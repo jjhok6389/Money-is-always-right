@@ -2,8 +2,9 @@
 Financial Supervisory Service (금감원) FinLife Open API client.
 
 Endpoints used:
-  - /depositProductsSearch.json  (정기예금)
-  - /savingProductsSearch.json   (적금)
+  - /depositProductsSearch.json       (정기예금)
+  - /savingProductsSearch.json        (적금)
+  - /annuitySavingProductsSearch.json (연금저축)
 
 Docs: https://finlife.fss.or.kr/finlife/main/contents.do?menuNo=700029
 
@@ -20,11 +21,19 @@ import httpx
 from app.config import get_settings
 from app.models.product import FinancialProduct, ProductListResponse, ProductOption
 
-ProductType = Literal["deposit", "saving"]
+ProductType = Literal["deposit", "saving", "annuity"]
 
 ENDPOINT_BY_TYPE = {
     "deposit": "depositProductsSearch.json",
     "saving": "savingProductsSearch.json",
+    "annuity": "annuitySavingProductsSearch.json",
+}
+
+# 연금저축은 은행(020000)보다 보험·금융투자 권역에 상품이 많다.
+DEFAULT_GROUP_BY_TYPE = {
+    "deposit": "020000",
+    "saving": "020000",
+    "annuity": "050000",
 }
 
 
@@ -46,6 +55,28 @@ def _to_int(value: Any) -> int | None:
         return None
 
 
+def _option_rate(option: dict[str, Any]) -> tuple[float | None, float | None]:
+    """Map deposit/saving rates and annuity yield fields onto a common pair."""
+    base = _to_float(option.get("intr_rate"))
+    if base is None:
+        base = _to_float(option.get("avg_prft_rate"))
+    if base is None:
+        base = _to_float(option.get("dcls_rate"))
+
+    high = _to_float(option.get("intr_rate2"))
+    if high is None:
+        high = _to_float(option.get("btrm_prft_rate_1"))
+    return base, high
+
+
+def _option_term_months(option: dict[str, Any]) -> int:
+    term = _to_int(option.get("save_trm"))
+    if term is not None:
+        return term
+    # 연금저축 option은 저축기간(개월)이 없을 수 있음 → 0으로 정규화
+    return 0
+
+
 def _normalize_products(
     product_type: ProductType,
     base_list: list[dict[str, Any]],
@@ -54,13 +85,14 @@ def _normalize_products(
     options_by_code: dict[str, list[ProductOption]] = {}
     for option in option_list:
         code = option.get("fin_prdt_cd", "")
+        base_rate, max_rate = _option_rate(option)
         options_by_code.setdefault(code, []).append(
             ProductOption(
-                saveTermMonths=_to_int(option.get("save_trm")) or 0,
-                interestRate=_to_float(option.get("intr_rate")),
-                maxInterestRate=_to_float(option.get("intr_rate2")),
-                interestType=option.get("intr_rate_type_nm"),
-                reserveType=option.get("rsrv_type_nm"),
+                saveTermMonths=_option_term_months(option),
+                interestRate=base_rate,
+                maxInterestRate=max_rate,
+                interestType=option.get("intr_rate_type_nm") or option.get("pnsn_recp_trm_nm"),
+                reserveType=option.get("rsrv_type_nm") or option.get("pnsn_entr_age_nm"),
             )
         )
 
@@ -76,7 +108,7 @@ def _normalize_products(
                 continue
             if best is None or rate > best:
                 best = rate
-                best_term = option.saveTermMonths
+                best_term = option.saveTermMonths or None
 
         products.append(
             FinancialProduct(
@@ -86,8 +118,8 @@ def _normalize_products(
                 productCode=code,
                 companyCode=base.get("fin_co_no") or "",
                 joinWay=base.get("join_way"),
-                joinMember=base.get("join_member"),
-                spclCnd=base.get("spcl_cnd"),
+                joinMember=base.get("join_member") or base.get("prdt_type_nm"),
+                spclCnd=base.get("spcl_cnd") or base.get("pnsn_kind_nm"),
                 etcNote=base.get("etc_note"),
                 maxLimit=_to_int(base.get("max_limit")),
                 disclosureMonth=base.get("dcls_month"),
@@ -110,6 +142,14 @@ def _mock_products(product_type: ProductType) -> list[FinancialProduct]:
             ("우리은행", "우리 첫거래 예금", "WR-DEP-01", 6, 2.9, 3.1),
             ("카카오뱅크", "카카오뱅크 정기예금", "KK-DEP-01", 12, 3.25, 3.35),
         ]
+    elif product_type == "annuity":
+        catalog = [
+            ("삼성생명", "삼성 연금저축보험", "SS-ANN-01", 0, 3.8, 4.2),
+            ("한화생명", "한화 연금저축", "HW-ANN-01", 0, 3.6, 4.0),
+            ("교보생명", "교보 연금저축보험", "KB-ANN-01", 0, 3.7, 4.1),
+            ("미래에셋증권", "미래에셋 연금저축펀드", "MR-ANN-01", 0, 4.0, 5.5),
+            ("KB증권", "KB 연금저축펀드", "KS-ANN-01", 0, 3.9, 5.2),
+        ]
     else:
         catalog = [
             ("국민은행", "KB 청년 적금", "KB-SAV-01", 12, 3.5, 4.2),
@@ -130,7 +170,7 @@ def _mock_products(product_type: ProductType) -> list[FinancialProduct]:
                 companyCode=f"MOCK-{company}",
                 joinWay="스마트폰 / 영업점",
                 joinMember="제한없음",
-                spclCnd="우대금리 조건은 금융회사 공시를 확인하세요.",
+                spclCnd="우대금리·수익률 조건은 금융회사 공시를 확인하세요.",
                 etcNote="API 키 미설정 시 제공되는 모의 상품입니다.",
                 maxLimit=None,
                 disclosureMonth="202608",
@@ -139,12 +179,16 @@ def _mock_products(product_type: ProductType) -> list[FinancialProduct]:
                         saveTermMonths=term,
                         interestRate=base_rate,
                         maxInterestRate=max_rate,
-                        interestType="단리",
-                        reserveType="정액적립식" if product_type == "saving" else None,
+                        interestType="단리" if product_type != "annuity" else "공시이율",
+                        reserveType=(
+                            "정액적립식"
+                            if product_type == "saving"
+                            else ("연금저축" if product_type == "annuity" else None)
+                        ),
                     )
                 ],
                 bestRate=max_rate,
-                bestTermMonths=term,
+                bestTermMonths=term or None,
             )
         )
     return products
@@ -156,7 +200,7 @@ async def fetch_products(
     page_no: int = 1,
 ) -> ProductListResponse:
     settings = get_settings()
-    group = top_fin_grp_no or settings.fss_top_fin_grp_no
+    group = top_fin_grp_no or DEFAULT_GROUP_BY_TYPE.get(product_type) or settings.fss_top_fin_grp_no
 
     if not settings.fss_api_key:
         products = _mock_products(product_type)

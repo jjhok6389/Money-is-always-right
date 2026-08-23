@@ -6,7 +6,7 @@ Content-Type,application/json
 에러 형식,"{ ""detail"": ""한국어 메시지"" }"
 investmentPropensity,"stable=안정형 / stable_seeking=안정추구형 / neutral=위험중립형 / aggressive=적극투자형 / very_aggressive=공격투자형"
 expenseType,fixed=고정비 / variable=변동비
-productType,deposit=예금 / saving=적금
+productType,deposit=예금 / saving=적금 / annuity=연금저축
 Products source,fss=금감원 실데이터 / mock=모의 데이터
 Coach source,bedrock=AWS Bedrock / fallback=로컬 안내
 월 적립 공식 (시뮬레이션),(소득-지출)×저축률(%)

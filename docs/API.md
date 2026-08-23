@@ -74,7 +74,7 @@ HTTP `401 Unauthorized`
 |------|-----|
 | `investmentPropensity` | `stable` (안정형), `stable_seeking` (안정추구형), `neutral` (위험중립형), `aggressive` (적극투자형), `very_aggressive` (공격투자형) |
 | `expenseType` | `fixed` (고정비), `variable` (변동비) |
-| `productType` | `deposit` (예금), `saving` (적금) |
+| `productType` | `deposit` (예금), `saving` (적금), `annuity` (연금저축) |
 | `category` | `food`, `transport`, `housing`, `telecom`, `shopping`, `leisure`, `medical`, `education`, `savings`, `income`, `other` |
 
 ---
@@ -279,7 +279,7 @@ Prefix: `/api/products`
 
 | 이름 | 타입 | 기본 | 설명 |
 |------|------|------|------|
-| `productType` | string | `saving` | `deposit` \| `saving` |
+| `productType` | string | `saving` | `deposit` \| `saving` \| `annuity` |
 | `topFinGrpNo` | string | env 기본 `020000` | 금융권역 (은행 `020000`, 저축은행 `030300`) |
 | `pageNo` | int | 1 | 1~50 |
 
@@ -332,6 +332,7 @@ Prefix: `/api/products`
 |--------|------|------|
 | GET | `/api/products/deposits` | 정기예금만 |
 | GET | `/api/products/savings` | 적금만 |
+| GET | `/api/products/annuities` | 연금저축만 |
 
 Query: `topFinGrpNo`, `pageNo` (동일)
 

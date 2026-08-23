@@ -1,7 +1,7 @@
 """
 FastAPI entrypoint for Money is Always Right.
 Phase 1: user profiles via Firebase
-Phase 2: transaction pipeline + FSS deposit/savings products
+Phase 2: transaction pipeline + FSS deposit/savings/annuity products
 Phase 3: personalized dashboard & financial roadmap
 Phase 4: digital twin simulation
 Phase 5: AI financial coach (AWS Bedrock)

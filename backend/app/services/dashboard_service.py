@@ -316,10 +316,15 @@ async def build_dashboard(
     debt_items = _debt_priorities(debt_balance, monthly_capacity)
     roadmap = _roadmap(profile, goal, consumption_totals, debt_items)
 
-    # Prefer savings products for accumulation goals; mix in a top deposit.
+    # Prefer savings for accumulation; mix deposit + annuity for longer-term goals.
     saving_resp = await fss_client.fetch_products("saving")
     deposit_resp = await fss_client.fetch_products("deposit")
-    mixed = list(saving_resp.products[:4]) + list(deposit_resp.products[:2])
+    annuity_resp = await fss_client.fetch_products("annuity")
+    mixed = (
+        list(saving_resp.products[:3])
+        + list(deposit_resp.products[:2])
+        + list(annuity_resp.products[:2])
+    )
     recommended = _recommend_products(mixed, profile.investmentPropensity)
 
     return DashboardResponse(

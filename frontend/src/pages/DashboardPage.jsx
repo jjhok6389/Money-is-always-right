@@ -177,12 +177,17 @@ export default function DashboardPage() {
                     className="product-card"
                   >
                     <p className="product-bank">
-                      {product.companyName} · {product.productType === 'saving' ? '적금' : '예금'}
+                      {product.companyName} ·{' '}
+                      {product.productType === 'saving'
+                        ? '적금'
+                        : product.productType === 'annuity'
+                          ? '연금저축'
+                          : '예금'}
                     </p>
                     <h2>{product.productName}</h2>
                     <dl>
                       <div>
-                        <dt>최고금리</dt>
+                        <dt>{product.productType === 'annuity' ? '공시수익률' : '최고금리'}</dt>
                         <dd>
                           {product.bestRate != null ? `${product.bestRate.toFixed(2)}%` : '-'}
                         </dd>
