@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/.venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Environment & secrets
+.env
+frontend/.env
+backend/.env
+**/serviceAccountKey.json
+**/*firebase*adminsdk*.json
+
+# Build / IDE
+dist/
+build/
+frontend/.vite/
+.DS_Store
+.idea/
+.vscode/
+*.log

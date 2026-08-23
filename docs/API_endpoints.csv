@@ -1,0 +1,16 @@
+구분,Method,Path,인증,Query/Params,Request Body 요약,Response 요약,source/비고,관련 Jira
+공통,GET,/health,불필요,-,-,"{ status, phase, demoMode }",데모모드 여부 확인,-
+Users,GET,/api/users/me,Bearer,-,-,UserProfileResponse,프로필 없으면 404,YP2026-44
+Users,PUT,/api/users/me,Bearer,-,"displayName age occupation monthlyIncome fixedExpenses estimatedMonthlySavings investmentPropensity(stable|stable_seeking|neutral|aggressive|very_aggressive) targetAssetAmount targetYears goalDescription onboardingCompleted email? createdAt?",UserProfileResponse,온보딩 업서트,YP2026-43 YP2026-44
+Transactions,GET,/api/transactions/pipeline,Bearer,"month=YYYY-MM count=10~120(default 40)",-,"{ userId generatedAt month transactions[] categorySummaries[] totals }",더미 거래 생성·분류,YP2026-45 YP2026-46
+Transactions,POST,/api/transactions/pipeline,Bearer,-,"{ month? count seed? }",TransactionPipelineResult,시드 재생성,YP2026-46
+Transactions,POST,/api/transactions/classify,Bearer,"description(필수) merchant?",-,분류 결과 category/expenseType,단일 문구 분류 유틸,YP2026-45
+Products,GET,/api/products,Bearer,"productType=deposit|saving topFinGrpNo pageNo",-,"{ source count products[] message }",source=fss|mock,YP2026-48
+Products,GET,/api/products/deposits,Bearer,"topFinGrpNo pageNo",-,ProductListResponse,정기예금,YP2026-48
+Products,GET,/api/products/savings,Bearer,"topFinGrpNo pageNo",-,ProductListResponse,적금,YP2026-48
+Dashboard,GET,/api/dashboard,Bearer,-,-,DashboardResponse,서버 저장 프로필 기준 / 없으면 404,YP2026-50 YP2026-52
+Dashboard,POST,/api/dashboard/compute,Bearer,-,"{ profile? currentAssets? debtBalance? month? }",DashboardResponse,프론트 권장,YP2026-50 YP2026-51 YP2026-52 YP2026-53
+Simulation,POST,/api/simulation/run,Bearer,-,"{ baseline scenario label? }",SimulationResponse,baseline/scenario 직접 전달,YP2026-55 YP2026-57
+Simulation,POST,/api/simulation/from-profile,Bearer,-,"{ profile? scenario currentAssets? label? }",SimulationResponse,프론트 권장 / 프로필 없으면 404,YP2026-55 YP2026-56 YP2026-57
+Coach,POST,/api/coach/chat,Bearer,-,"{ message history[] profile? dashboardHints? }","{ reply source modelId suggestions[] }",source=bedrock|fallback,YP2026-58 YP2026-59 YP2026-60
+Coach,GET,/api/coach/suggestions,Bearer,-,-,"{ suggestions[] }",추천 질문 목록,YP2026-60
