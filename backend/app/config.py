@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     bedrock_max_tokens: int = 1024
     bedrock_fallback_enabled: bool = True
 
+    # KRX Open API — ETF 일별매매정보
+    # https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES003_S2.cmd?BO_ID=nrEpCLaZpoLCTzPUMxuF
+    krx_auth_key: str = ""
+    krx_base_url: str = "https://data-dbg.krx.co.kr/svc/apis"
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -338,6 +338,20 @@ Query: `topFinGrpNo`, `pageNo` (동일)
 
 ---
 
+## 5.1 ETF — KRX 일별 공시 기반 추천
+
+Prefix: `/api/etf`
+
+| Method | Path | 설명 |
+|--------|------|------|
+| GET | `/api/etf/recommendations?propensity=` | 성향별 ETF 리스트 (안정형·안정추구형은 빈 배열) |
+| GET | `/api/etf/{symbol}` | 상세 + 6개월 종가 시계열 + 추천 이유 |
+
+- `KRX_AUTH_KEY` 없으면 `source=mock`
+- 변동성 = 일간 수익률 표준편차 × √252 (연율화), UI 표기는 「6개월 변동성」
+
+---
+
 ## 6. Dashboard — 맞춤 대시보드
 
 Prefix: `/api/dashboard`
@@ -439,6 +453,20 @@ Prefix: `/api/dashboard`
       "reason": "수익과 안정의 균형을 위해 중기 적립을 권장합니다."
     }
   ],
+  "recommendedEtfs": [
+    {
+      "symbol": "153130",
+      "name": "KODEX 단기채권",
+      "volatility": 0.04,
+      "volatilityPct": 4.0,
+      "volatilityBucket": "low",
+      "change6mPct": 1.2,
+      "lastPrice": 105012.3,
+      "reason": "최근 6개월 일간 변동성이 동일 유니버스 대비 낮은 편이라 위험중립형 투자 비중에 맞습니다."
+    }
+  ],
+  "etfSource": "mock",
+  "etfMessage": "KRX_AUTH_KEY가 없어 모의 ETF 유니버스를 반환했습니다.",
   "debtRepaymentPriority": [
     {
       "priority": 1,

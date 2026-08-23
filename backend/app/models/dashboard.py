@@ -7,6 +7,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 from app.models.user import InvestmentPropensity
+from app.models.etf import EtfSummary
 
 
 class ProfileSnapshot(BaseModel):
@@ -82,4 +83,7 @@ class DashboardResponse(BaseModel):
     goal: GoalProgress
     roadmap: list[RoadmapItem]
     recommendedProducts: list[RecommendedProduct]
+    recommendedEtfs: list[EtfSummary] = Field(default_factory=list)
     debtRepaymentPriority: list[RoadmapItem]
+    etfMessage: Optional[str] = None
+    etfSource: Optional[Literal["krx", "mock"]] = None

@@ -25,7 +25,7 @@ from app.models.dashboard import (
     RoadmapItem,
     ProfileSnapshot,
 )
-from app.services import fss_client, transaction_pipeline
+from app.services import etf_recommendation, fss_client, transaction_pipeline
 
 # Fallback when profile has no explicit currentAssets.
 DEFAULT_ASSET_MONTHS = 6
@@ -327,6 +327,8 @@ async def build_dashboard(
     )
     recommended = _recommend_products(mixed, profile.investmentPropensity)
 
+    etf_list = await etf_recommendation.recommend_etfs(profile.investmentPropensity)
+
     return DashboardResponse(
         generatedAt=datetime.utcnow().isoformat() + "Z",
         month=month,
@@ -336,5 +338,8 @@ async def build_dashboard(
         goal=goal,
         roadmap=roadmap,
         recommendedProducts=recommended,
+        recommendedEtfs=etf_list.etfs,
         debtRepaymentPriority=debt_items,
+        etfMessage=etf_list.message,
+        etfSource=etf_list.source,
     )

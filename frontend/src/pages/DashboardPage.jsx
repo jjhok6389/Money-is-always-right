@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import AppHeader from '../components/AppHeader';
 import ConsumptionBarChart from '../components/ConsumptionBarChart';
+import EtfVolatilityChart from '../components/EtfVolatilityChart';
 import PortfolioDonut from '../components/PortfolioDonut';
 import { useAuth } from '../contexts/AuthContext';
 import { computeDashboard } from '../services/dashboardService';
+import { fetchEtfDetail } from '../services/etfService';
 
 function formatDate(value) {
   if (!value) return '산출 불가';
@@ -12,6 +14,12 @@ function formatDate(value) {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
 }
 
+const BUCKET_LABEL = {
+  low: '저변동',
+  mid: '중변동',
+  high: '고변동',
+};
+
 export default function DashboardPage() {
   const { profile } = useAuth();
   const [data, setData] = useState(null);
@@ -19,6 +27,13 @@ export default function DashboardPage() {
   const [currentAssets, setCurrentAssets] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedEtf, setSelectedEtf] = useState(null);
+  const [etfDetail, setEtfDetail] = useState(null);
+  const [etfDetailLoading, setEtfDetailLoading] = useState(false);
+  const [etfDetailError, setEtfDetailError] = useState('');
+
+  const propensity = profile?.investmentPropensity || 'neutral';
+  const showEtfSection = !['stable', 'stable_seeking'].includes(propensity);
 
   const load = async () => {
     if (!profile) {
@@ -36,7 +51,7 @@ export default function DashboardPage() {
           monthlyIncome: Number(profile.monthlyIncome) || 0,
           fixedExpenses: Number(profile.fixedExpenses) || 0,
           estimatedMonthlySavings: Number(profile.estimatedMonthlySavings) || 0,
-          investmentPropensity: profile.investmentPropensity || 'neutral',
+          investmentPropensity: propensity,
           targetAssetAmount: Number(profile.targetAssetAmount) || 0,
           targetYears: Number(profile.targetYears) || 1,
           goalDescription: profile.goalDescription || '',
@@ -57,10 +72,31 @@ export default function DashboardPage() {
     }
   };
 
+  const openEtfDetail = async (etf) => {
+    setSelectedEtf(etf);
+    setEtfDetail(null);
+    setEtfDetailError('');
+    setEtfDetailLoading(true);
+    try {
+      const result = await fetchEtfDetail(etf.symbol, propensity);
+      setEtfDetail(result);
+    } catch (err) {
+      setEtfDetailError(err.message || 'ETF 상세를 불러오지 못했습니다.');
+    } finally {
+      setEtfDetailLoading(false);
+    }
+  };
+
+  const closeEtfDetail = () => {
+    setSelectedEtf(null);
+    setEtfDetail(null);
+    setEtfDetailError('');
+  };
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.uid, profile?.targetAssetAmount]);
+  }, [profile?.uid, profile?.targetAssetAmount, profile?.investmentPropensity]);
 
   return (
     <div className="page-shell">
@@ -206,6 +242,61 @@ export default function DashboardPage() {
             </section>
 
             <section className="panel">
+              <h2>ETF 추천</h2>
+              <p className="disclaimer-inline">
+                투자 권유 아님 · 과거 데이터 기반. 과거 변동 ≠ 미래 수익.
+              </p>
+              {!showEtfSection ? (
+                <p className="muted">
+                  {data.etfMessage ||
+                    '안정형·안정추구형은 예·적금 중심이라 ETF 추천을 생략합니다. 투자 비중을 키우려면 성향을 조정해 보세요.'}
+                </p>
+              ) : (
+                <>
+                  <p className={`source-banner ${data.etfSource === 'krx' ? 'live' : 'mock'}`}>
+                    {data.etfSource === 'krx'
+                      ? `KRX 일별 공시 기반 · ${data.recommendedEtfs?.length || 0}개`
+                      : data.etfMessage ||
+                        `모의 ETF 데이터 · ${data.recommendedEtfs?.length || 0}개`}
+                  </p>
+                  <div className="product-grid">
+                    {(data.recommendedEtfs || []).map((etf) => (
+                      <button
+                        type="button"
+                        key={etf.symbol}
+                        className="product-card etf-card"
+                        onClick={() => openEtfDetail(etf)}
+                      >
+                        <p className="product-bank">
+                          {etf.symbol} · {BUCKET_LABEL[etf.volatilityBucket] || etf.volatilityBucket}
+                        </p>
+                        <h2>{etf.name}</h2>
+                        <dl>
+                          <div>
+                            <dt>6개월 변동성</dt>
+                            <dd>{etf.volatilityPct?.toFixed(2)}%</dd>
+                          </div>
+                          <div>
+                            <dt>6개월 수익률</dt>
+                            <dd>
+                              {etf.change6mPct != null
+                                ? `${etf.change6mPct > 0 ? '+' : ''}${etf.change6mPct.toFixed(2)}%`
+                                : '-'}
+                            </dd>
+                          </div>
+                        </dl>
+                        <p className="product-note">{etf.reason}</p>
+                      </button>
+                    ))}
+                  </div>
+                  {(data.recommendedEtfs || []).length === 0 && (
+                    <p className="muted">조건에 맞는 ETF가 없습니다.</p>
+                  )}
+                </>
+              )}
+            </section>
+
+            <section className="panel">
               <h2>부채 상환 우선순위</h2>
               <ol className="roadmap-list">
                 {data.debtRepaymentPriority.map((item) => (
@@ -222,6 +313,70 @@ export default function DashboardPage() {
           </>
         )}
       </main>
+
+      {selectedEtf && (
+        <div className="modal-backdrop" role="presentation" onClick={closeEtfDetail}>
+          <div
+            className="modal-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="etf-detail-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div>
+                <p className="eyebrow">{selectedEtf.symbol}</p>
+                <h2 id="etf-detail-title">{selectedEtf.name}</h2>
+              </div>
+              <button type="button" className="btn btn-ghost" onClick={closeEtfDetail}>
+                닫기
+              </button>
+            </div>
+
+            {etfDetailLoading && <p className="muted">상세 시계열을 불러오는 중...</p>}
+            {etfDetailError && (
+              <p className="alert alert-error" role="alert">
+                {etfDetailError}
+              </p>
+            )}
+
+            {etfDetail?.etf && (
+              <>
+                <p className={`source-banner ${etfDetail.source === 'krx' ? 'live' : 'mock'}`}>
+                  {etfDetail.source === 'krx'
+                    ? 'KRX 일별 종가'
+                    : etfDetail.message || '모의 시계열'}
+                </p>
+                <dl className="etf-detail-stats">
+                  <div>
+                    <dt>6개월 변동성</dt>
+                    <dd>{etfDetail.etf.volatilityPct.toFixed(2)}%</dd>
+                  </div>
+                  <div>
+                    <dt>6개월 수익률</dt>
+                    <dd>
+                      {etfDetail.etf.change6mPct != null
+                        ? `${etfDetail.etf.change6mPct > 0 ? '+' : ''}${etfDetail.etf.change6mPct.toFixed(2)}%`
+                        : '-'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>최근 종가</dt>
+                    <dd>
+                      {etfDetail.etf.lastPrice != null
+                        ? `${Number(etfDetail.etf.lastPrice).toLocaleString('ko-KR')}원`
+                        : '-'}
+                    </dd>
+                  </div>
+                </dl>
+                <EtfVolatilityChart series={etfDetail.etf.series} />
+                <p className="product-note">{etfDetail.etf.reason}</p>
+                <p className="disclaimer-inline">{etfDetail.etf.disclaimer}</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
