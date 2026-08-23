@@ -1,7 +1,7 @@
 구분,Method,Path,인증,Query/Params,Request Body 요약,Response 요약,source/비고,관련 Jira
 공통,GET,/health,불필요,-,-,"{ status, phase, demoMode }",데모모드 여부 확인,-
 Users,GET,/api/users/me,Bearer,-,-,UserProfileResponse,프로필 없으면 404,YP2026-44
-Users,PUT,/api/users/me,Bearer,-,"displayName age occupation monthlyIncome fixedExpenses estimatedMonthlySavings investmentPropensity(stable|neutral|aggressive) targetAssetAmount targetYears goalDescription onboardingCompleted email? createdAt?",UserProfileResponse,온보딩 업서트,YP2026-43 YP2026-44
+Users,PUT,/api/users/me,Bearer,-,"displayName age occupation monthlyIncome fixedExpenses estimatedMonthlySavings investmentPropensity(stable|stable_seeking|neutral|aggressive|very_aggressive) targetAssetAmount targetYears goalDescription onboardingCompleted email? createdAt?",UserProfileResponse,온보딩 업서트,YP2026-43 YP2026-44
 Transactions,GET,/api/transactions/pipeline,Bearer,"month=YYYY-MM count=10~120(default 40)",-,"{ userId generatedAt month transactions[] categorySummaries[] totals }",더미 거래 생성·분류,YP2026-45 YP2026-46
 Transactions,POST,/api/transactions/pipeline,Bearer,-,"{ month? count seed? }",TransactionPipelineResult,시드 재생성,YP2026-46
 Transactions,POST,/api/transactions/classify,Bearer,"description(필수) merchant?",-,분류 결과 category/expenseType,단일 문구 분류 유틸,YP2026-45

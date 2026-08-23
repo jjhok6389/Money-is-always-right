@@ -12,6 +12,15 @@ class ChatMessage(BaseModel):
     content: str
 
 
+class ToolTrace(BaseModel):
+    """One agent tool execution, surfaced so the UI can show what the agent did."""
+
+    name: str
+    label: str
+    status: Literal["ok", "error"]
+    summary: str
+
+
 class CoachChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     history: list[ChatMessage] = Field(default_factory=list, max_length=20)
@@ -25,3 +34,4 @@ class CoachChatResponse(BaseModel):
     source: Literal["bedrock", "fallback"]
     modelId: Optional[str] = None
     suggestions: list[str] = Field(default_factory=list)
+    toolTrace: list[ToolTrace] = Field(default_factory=list)

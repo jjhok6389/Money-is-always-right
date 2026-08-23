@@ -8,17 +8,27 @@ const INVESTMENT_TYPES = [
   {
     value: 'stable',
     label: '안정형',
-    description: '원금 보존을 우선하며 낮은 변동성을 선호합니다.',
+    description: '예·적금 수준의 수익을 기대하며 원금 손실을 원하지 않습니다.',
+  },
+  {
+    value: 'stable_seeking',
+    label: '안정추구형',
+    description: '원금 손실 위험을 최소화하면서 이자·배당 수준의 안정적인 수익을 목표로 합니다.',
   },
   {
     value: 'neutral',
-    label: '중립형',
-    description: '수익과 안정성의 균형을 추구합니다.',
+    label: '위험중립형',
+    description: '단기 손실은 제한적으로 감수하고, 자산 일부를 변동성 있는 상품에 투자할 의향이 있습니다.',
   },
   {
     value: 'aggressive',
-    label: '적극형',
-    description: '높은 수익을 위해 변동성을 감수합니다.',
+    label: '적극투자형',
+    description: '예·적금보다 높은 수익을 기대할 수 있다면 일정 수준의 손실 위험을 감수합니다.',
+  },
+  {
+    value: 'very_aggressive',
+    label: '공격투자형',
+    description: '높은 수익을 위해 자산 대부분에서 큰 손실 위험까지 감수할 수 있습니다.',
   },
 ];
 

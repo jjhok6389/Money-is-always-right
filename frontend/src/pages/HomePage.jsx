@@ -4,8 +4,10 @@ import { useAuth } from '../contexts/AuthContext';
 
 const PROPENSITY_LABELS = {
   stable: '안정형',
-  neutral: '중립형',
-  aggressive: '적극형',
+  stable_seeking: '안정추구형',
+  neutral: '위험중립형',
+  aggressive: '적극투자형',
+  very_aggressive: '공격투자형',
 };
 
 export default function HomePage() {

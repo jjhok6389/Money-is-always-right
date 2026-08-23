@@ -7,7 +7,15 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 
-InvestmentPropensity = Literal["stable", "neutral", "aggressive"]
+# 금융투자협회 표준투자권유준칙 기반 실무 5단계 분류.
+# 기존 3분류(stable/neutral/aggressive)의 키를 그대로 살려 저장된 프로필이 유효함.
+InvestmentPropensity = Literal[
+    "stable",           # 안정형
+    "stable_seeking",   # 안정추구형
+    "neutral",          # 위험중립형
+    "aggressive",       # 적극투자형
+    "very_aggressive",  # 공격투자형
+]
 
 
 class UserProfileUpdate(BaseModel):
