@@ -16,7 +16,7 @@ from typing import Any, Awaitable, Callable
 from app.models.dashboard import DashboardRequest, DashboardResponse
 from app.models.product import ProductListResponse, ProductType
 from app.models.simulation import SimulationRequest
-from app.services import dashboard_service, fss_client, simulation_service
+from app.services import dashboard_service, etf_knowledge, etf_recommendation, fss_client, simulation_service
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,9 @@ TOOL_LABELS = {
     "search_products": "금융상품 탐색",
     "run_scenario_simulation": "시나리오 시뮬레이션",
     "get_roadmap": "로드맵 조회",
+    "search_etfs": "ETF 추천 조회",
+    "get_etf_detail": "ETF 상세 조회",
+    "search_etf_knowledge": "ETF 지식 검색",
 }
 
 # Onboarding does not collect assets/debt yet, so the dashboard estimates them.
@@ -157,6 +160,74 @@ async def _run_scenario_simulation(params: dict[str, Any], ctx: AgentContext) ->
     }
 
 
+def _propensity(ctx: AgentContext) -> str:
+    return etf_recommendation.normalize_propensity(
+        (ctx.profile or {}).get("investmentPropensity")
+    )
+
+
+async def _search_etfs(_params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
+    propensity = _propensity(ctx)
+    result = await etf_recommendation.recommend_etfs(propensity)
+    return {
+        "propensity": result.propensity,
+        "source": result.source,
+        "count": result.count,
+        "message": result.message,
+        "etfs": [
+            {
+                "symbol": item.symbol,
+                "name": item.name,
+                "vol60Pct": item.volatilityPct,
+                "bucket": item.volatilityBucket,
+                "volPercentile": item.volPercentile,
+                "universeSize": item.universeSize,
+                "riskLevel": item.riskLevel,
+                "riskLabel": item.riskLabel,
+                "change60Pct": item.change60Pct,
+                "lastPrice": item.lastPrice,
+                "reason": item.reason,
+                "asOfDate": item.asOfDate,
+            }
+            for item in result.etfs
+        ],
+        "disclaimer": "투자 권유 아님. 6개월 변동성은 과거 데이터이며 미래 수익이 아닙니다.",
+    }
+
+
+async def _get_etf_detail(params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
+    symbol = str(params.get("symbol") or "").strip()
+    if not symbol:
+        return {"error": "종목코드(symbol)가 필요합니다."}
+    detail = await etf_recommendation.get_etf_detail(symbol, _propensity(ctx))
+    etf = detail.etf
+    return {
+        "source": detail.source,
+        "message": detail.message,
+        "symbol": etf.symbol,
+        "name": etf.name,
+        "vol60Pct": etf.volatilityPct,
+        "bucket": etf.volatilityBucket,
+        "volPercentile": etf.volPercentile,
+        "universeSize": etf.universeSize,
+        "riskLevel": etf.riskLevel,
+        "riskLabel": etf.riskLabel,
+        "change60Pct": etf.change60Pct,
+        "lastPrice": etf.lastPrice,
+        "asOfDate": etf.asOfDate,
+        "reason": etf.reason,
+        "windowStart": etf.series[0].date if etf.series else None,
+        "windowEnd": etf.series[-1].date if etf.series else None,
+        "pointCount": len(etf.series),
+        "disclaimer": etf.disclaimer,
+    }
+
+
+async def _search_etf_knowledge(params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
+    query = str(params.get("query") or "").strip()
+    return etf_knowledge.retrieve_etf_knowledge(query, _propensity(ctx))
+
+
 async def _get_roadmap(_params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
     data = await ctx.dashboard()
     return {
@@ -181,6 +252,9 @@ _HANDLERS: dict[str, Callable[[dict[str, Any], AgentContext], Awaitable[dict[str
     "search_products": _search_products,
     "run_scenario_simulation": _run_scenario_simulation,
     "get_roadmap": _get_roadmap,
+    "search_etfs": _search_etfs,
+    "get_etf_detail": _get_etf_detail,
+    "search_etf_knowledge": _search_etf_knowledge,
 }
 
 
@@ -256,6 +330,50 @@ TOOL_SPECS: list[dict[str, Any]] = [
             "inputSchema": {"json": {"type": "object", "properties": {}}},
         }
     },
+    {
+        "toolSpec": {
+            "name": "search_etfs",
+            "description": (
+                "사용자 투자 성향에 맞는 ETF 추천 목록을 조회한다. "
+                "숫자는 저장된 6개월 변동성 지표이며, 안정형은 빈 목록이다. "
+                "투자 권유가 아니다."
+            ),
+            "inputSchema": {"json": {"type": "object", "properties": {}}},
+        }
+    },
+    {
+        "toolSpec": {
+            "name": "get_etf_detail",
+            "description": "특정 ETF의 6개월 변동성·유니버스 상대 분위·종가 요약을 조회한다. 숫자는 DB 값만 사용한다.",
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {
+                        "symbol": {"type": "string", "description": "종목코드, 예: 069500"},
+                    },
+                    "required": ["symbol"],
+                }
+            },
+        }
+    },
+    {
+        "toolSpec": {
+            "name": "search_etf_knowledge",
+            "description": (
+                "ETF 개념, 레버리지, NAV, 성향별 추천 정책, 면책을 검색한다. "
+                "변동성 숫자나 종가를 이 도구로 만들지 말고 search_etfs/get_etf_detail을 쓴다."
+            ),
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "사용자 질문 또는 검색어"},
+                    },
+                    "required": ["query"],
+                }
+            },
+        }
+    },
 ]
 
 
@@ -300,4 +418,10 @@ def summarize(name: str, result: dict[str, Any]) -> str:
         )
     if name == "get_roadmap":
         return f"실행 단계 {len(result['steps'])}개 · 부채 항목 {len(result['debtRepaymentPriority'])}개"
+    if name == "search_etfs":
+        return result.get("message") or f"ETF {result.get('count', 0)}건 (6개월 변동성)"
+    if name == "get_etf_detail":
+        return f"{result.get('name')} 6개월 변동성 {result.get('vol60Pct')}%"
+    if name == "search_etf_knowledge":
+        return f"ETF 지식 {len(result.get('chunks') or [])}건 ({result.get('source')})"
     return "완료"

@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     bedrock_model_id: str = "anthropic.claude-3-haiku-20240307-v1:0"
     bedrock_max_tokens: int = 1024
     bedrock_fallback_enabled: bool = True
+    bedrock_knowledge_base_id: str = ""
 
     # KRX Open API — ETF 일별매매정보
     # https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES003_S2.cmd?BO_ID=nrEpCLaZpoLCTzPUMxuF

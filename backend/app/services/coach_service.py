@@ -41,17 +41,38 @@ PROPENSITY_KO = {
 SUGGESTIONS = [
     "내 목표 달성까지 얼마나 걸릴까?",
     "안정형에게 맞는 적금 추천해줘",
-    "저축률을 10% 올리면 어떻게 될까?",
-    "대출을 먼저 갚는 게 나을까?",
+    "나한테 맞는 ETF 알려줘",
+    "레버리지 ETF가 뭐야?",
 ]
+
+_THINKING_BLOCK = re.compile(
+    r"<\s*(?:thinking|reasoning|thought)\s*>.*?<\s*/\s*(?:thinking|reasoning|thought)\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
+_THINKING_OPEN = re.compile(
+    r"<\s*(?:thinking|reasoning|thought)\s*>.*\Z",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _clean_model_text(text: str) -> str:
+    """Strip model scratchpad tags (Nova Lite often emits <thinking>...)."""
+    cleaned = _THINKING_BLOCK.sub("", text or "")
+    cleaned = _THINKING_OPEN.sub("", cleaned)
+    return cleaned.strip()
+
 
 SYSTEM_PROMPT = """당신은 'Money is Always Right'의 청년 자산형성 AI 에이전트입니다.
 반드시 자연스러운 한국어로만 답변하세요.
+내부 추론·사고 과정은 출력하지 마세요. <thinking>, <reasoning> 같은 태그를 절대 쓰지 마세요.
 
 당신은 도구(tool)를 사용해 사용자의 실제 금융 데이터를 조회할 수 있습니다.
 추측하지 말고, 수치가 필요하면 반드시 도구를 먼저 호출하세요.
 - 자산·목표 달성률·저축 여력이 필요하면 get_financial_state
 - 예·적금·연금저축 상품이 필요하면 search_products
+- ETF 추천 목록·6개월 변동성 숫자가 필요하면 search_etfs
+- 특정 ETF 종가·변동성 요약이 필요하면 get_etf_detail
+- ETF 개념·레버리지·NAV·추천 정책·면책은 search_etf_knowledge
 - '만약 ~하면' 같은 가정이 나오면 run_scenario_simulation
 - 실행 순서·부채 상환 우선순위가 필요하면 get_roadmap
 필요하면 여러 도구를 연달아 호출한 뒤 종합해서 답하세요.
@@ -65,6 +86,9 @@ SYSTEM_PROMPT = """당신은 'Money is Always Right'의 청년 자산형성 AI �
 6) 투자 성향은 안정형 < 안정추구형 < 위험중립형 < 적극투자형 < 공격투자형 순으로 위험 수용도가 높습니다.
    사용자의 성향보다 위험이 큰 상품은 권하지 않습니다.
 7) 상품 가입을 대신 실행할 수는 없습니다. 비교와 설명까지만 제공합니다.
+8) ETF 숫자는 search_etfs / get_etf_detail 결과만 사용합니다. RAG로 종가나 변동성을 만들지 마세요.
+9) 안정형에게 ETF 매수를 권하지 마세요. 예·적금·연금을 안내합니다.
+10) 6개월 변동성은 과거 데이터이며 미래 수익이 아님을 함께 말합니다.
 """
 
 
@@ -128,6 +152,8 @@ async def _run_bedrock_agent(
     messages = _history_to_bedrock(history)
     messages.append({"role": "user", "content": [{"text": message}]})
     traces: list[ToolTrace] = []
+    executed: list[tuple[str, dict[str, Any]]] = []
+    name_ko = (ctx.profile or {}).get("displayName") or "회원"
 
     for _ in range(MAX_TOOL_ITERATIONS):
         # boto3 is blocking; keep the event loop free so tools can stay async.
@@ -146,6 +172,9 @@ async def _run_bedrock_agent(
 
         if response.get("stopReason") != "tool_use":
             text = "".join(part.get("text", "") for part in content if "text" in part).strip()
+            text = _clean_model_text(text)
+            if not text:
+                text = _reply_from_tool_results(name_ko, executed)
             if not text:
                 raise RuntimeError("Empty Bedrock response")
             return text, traces
@@ -160,6 +189,7 @@ async def _run_bedrock_agent(
             name = use.get("name", "")
             result = await agent_tools.execute(name, use.get("input") or {}, ctx)
             traces.append(_trace(name, result))
+            executed.append((name, result))
             tool_results.append(
                 {
                     "toolResult": {
@@ -177,9 +207,24 @@ async def _run_bedrock_agent(
     raise RuntimeError(f"도구 호출이 {MAX_TOOL_ITERATIONS}회를 초과했습니다.")
 
 
+def _reply_from_tool_results(name_ko: str, executed: list[tuple[str, dict[str, Any]]]) -> str:
+    """When the model only emits <thinking>, rebuild a user-facing reply from tools."""
+    parts: list[str] = []
+    for name, result in executed:
+        if "error" in result:
+            parts.append(str(result["error"]))
+        elif name == "get_financial_state":
+            parts.append(_format_state_reply(name_ko, result))
+        elif name in _FORMATTERS:
+            parts.append(_FORMATTERS[name](result))
+    return "\n".join(part for part in parts if part).strip()
+
+
 # --- Keyword routing fallback --------------------------------------------
 
 ROUTING_RULES: list[tuple[str, tuple[str, ...]]] = [
+    ("search_etf_knowledge", ("레버리지", "인버스", "nav", "NAV", "순자산", "etf가 뭐", "ETF가 뭐")),
+    ("search_etfs", ("etf", "ETF", "KODEX", "TIGER", "kodex", "tiger", "변동성")),
     ("run_scenario_simulation", ("시나리오", "만약", "올리면", "늘리면", "줄이면", "시뮬", "바꾸면", "오르면")),
     ("search_products", ("적금", "예금", "연금", "상품", "추천", "비교", "금리", "가입")),
     ("get_roadmap", ("로드맵", "계획", "순서", "부채", "대출", "상환", "우선")),
@@ -197,6 +242,8 @@ def _route_tools(message: str) -> list[str]:
 
 
 def _fallback_params(name: str, message: str) -> dict[str, Any]:
+    if name == "search_etf_knowledge":
+        return {"query": message}
     if name == "search_products":
         if "연금" in message:
             product_type = "annuity"
@@ -302,10 +349,43 @@ def _format_roadmap_reply(result: dict[str, Any]) -> str:
     return reply.strip()
 
 
+def _format_etfs_reply(result: dict[str, Any]) -> str:
+    if result.get("count") == 0:
+        return result.get("message") or "성향상 ETF 추천을 생략합니다. 예·적금·연금을 먼저 살펴보세요."
+    lines = [result.get("message") or "성향에 맞춘 ETF 참고 목록입니다."]
+    for item in (result.get("etfs") or [])[:3]:
+        reason = (item.get("reason") or "").strip()
+        if reason:
+            lines.append(f"- {item['name']}({item['symbol']})\n{reason}")
+        else:
+            lines.append(
+                f"- {item['name']}({item['symbol']}): 최근 6개월 변동성 {item.get('vol60Pct')}%"
+            )
+    lines.append(result.get("disclaimer") or "투자 권유가 아니며 과거 변동은 미래 수익이 아닙니다.")
+    return "\n".join(lines)
+
+
+def _format_etf_knowledge_reply(result: dict[str, Any]) -> str:
+    chunks = result.get("chunks") or []
+    if not chunks:
+        return result.get("message") or "ETF 설명을 찾지 못했어요."
+    parts = [chunk.get("text", "") for chunk in chunks[:3] if chunk.get("text")]
+    if result.get("message") and result.get("source") != "bedrock_kb":
+        parts.append(result["message"])
+    return " ".join(parts)
+
+
 _FORMATTERS = {
     "search_products": _format_products_reply,
     "run_scenario_simulation": _format_simulation_reply,
     "get_roadmap": _format_roadmap_reply,
+    "search_etfs": _format_etfs_reply,
+    "get_etf_detail": lambda result: (
+        f"{result.get('name')} ({result.get('symbol')})\n"
+        f"{result.get('reason') or ''}\n"
+        f"{result.get('disclaimer') or ''}"
+    ).strip(),
+    "search_etf_knowledge": _format_etf_knowledge_reply,
 }
 
 
