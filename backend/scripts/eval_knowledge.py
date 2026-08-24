@@ -181,12 +181,18 @@ def run_mode(mode: str, cases: list[dict], docs) -> list[dict]:
                 "margin": round(scores[0] - scores[1], 4) if len(scores) > 1 else None,
                 "returned": len(hits),
                 # 서비스가 실제로 넘기는 건 상위 SERVE_LIMIT 건. 그 안의 신뢰도가 판단 근거다.
+                # confidence 는 merge() 가 붙이므로 union 에서만 의미가 있다.
+                # 다른 모드는 None 으로 두어 지표에서 빠지게 한다(가짜 수치 방지).
                 "bestConfidence": (
-                    "high"
-                    if any(hit.confidence == "high" for hit in hits[:SERVE_LIMIT])
-                    else "low"
+                    (
+                        "high"
+                        if any(hit.confidence == "high" for hit in hits[:SERVE_LIMIT])
+                        else "low"
+                    )
+                    if hits
+                    else None
                 )
-                if hits
+                if mode == "union"
                 else None,
                 "inServed": bool(
                     rank is not None and rank <= SERVE_LIMIT
@@ -217,7 +223,7 @@ def _summarize(rows: list[dict], ks: list[int]) -> dict:
             sum(1 for r in positives if r["inServed"]) / len(positives), 4
         )
         # 넘긴 문서를 high 로 표시했는가. 낮으면 정답인데도 "확인 필요"로 헤지하게 된다.
-        served = [r for r in positives if r["inServed"]]
+        served = [r for r in positives if r["inServed"] and r["bestConfidence"] is not None]
         if served:
             out["high_label_rate"] = round(
                 sum(1 for r in served if r["bestConfidence"] == "high") / len(served), 4
@@ -234,9 +240,11 @@ def _summarize(rows: list[dict], ks: list[int]) -> dict:
 
     if empties:
         # 문서를 반환하는 것 자체는 문제가 아니다. low 로 표시해 모델이 걸러낼 수 있으면 성공.
-        out["low_label_rate"] = round(
-            sum(1 for r in empties if r["bestConfidence"] != "high") / len(empties), 4
-        )
+        labeled = [r for r in empties if r["bestConfidence"] is not None]
+        if labeled:
+            out["low_label_rate"] = round(
+                sum(1 for r in labeled if r["bestConfidence"] != "high") / len(labeled), 4
+            )
         # 참고용: 반환 여부 자체 (합집합 도입 전 지표와 비교하려면 이 값을 볼 것)
         out["false_positive_rate"] = round(
             sum(1 for r in empties if r["returned"]) / len(empties), 4
@@ -330,7 +338,11 @@ def print_report(mode: str, rows: list[dict], ks: list[int], baseline: dict | No
     if view.get("separated") is True:
         print(f"  => 완전 분리됨. 임계값 {view['suggested_threshold']:.4f} 로 노이즈 차단 가능")
     elif view.get("separated") is False:
-        print("  => 분포가 겹침. 임계값만으로는 노이즈를 못 걷어냄 (하이브리드/재순위 필요)")
+        # 합집합은 이미 적용돼 있고, RRF 재순위는 recall 을 떨어뜨려 폐기했다.
+        # 짧은 질의는 무관 문서와도 점수가 높아 임계값 조정으로는 못 넘는 벽이다.
+        print("  => 분포가 겹침. 임계값 조정으로는 못 걷어냄.")
+        print("     confidence 는 보조 신호일 뿐이고, 실제 방어는 모델의 문서 판단과")
+        print("     코퍼스 확충이다 (data/knowledge/BACKLOG.md 21번).")
 
     # 실패 케이스 — 개선 실마리는 여기 있음
     stale = [r for r in rows if r["stale"]]
