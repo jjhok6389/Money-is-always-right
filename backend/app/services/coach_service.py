@@ -43,6 +43,7 @@ SUGGESTIONS = [
     "안정형에게 맞는 적금 추천해줘",
     "저축률을 10% 올리면 어떻게 될까?",
     "대출을 먼저 갚는 게 나을까?",
+    "이 적금 우대금리는 어떻게 받아?",
 ]
 
 SYSTEM_PROMPT = """당신은 'Money is Always Right'의 청년 자산형성 AI 에이전트입니다.
@@ -54,6 +55,7 @@ SYSTEM_PROMPT = """당신은 'Money is Always Right'의 청년 자산형성 AI �
 - 예·적금 상품이 필요하면 search_products
 - '만약 ~하면' 같은 가정이 나오면 run_scenario_simulation
 - 실행 순서·부채 상환 우선순위가 필요하면 get_roadmap
+- 우대조건·가입자격·정책상품·금융용어 설명이 필요하면 search_knowledge
 필요하면 여러 도구를 연달아 호출한 뒤 종합해서 답하세요.
 
 규칙:
@@ -65,6 +67,14 @@ SYSTEM_PROMPT = """당신은 'Money is Always Right'의 청년 자산형성 AI �
 6) 투자 성향은 안정형 < 안정추구형 < 위험중립형 < 적극투자형 < 공격투자형 순으로 위험 수용도가 높습니다.
    사용자의 성향보다 위험이 큰 상품은 권하지 않습니다.
 7) 상품 가입을 대신 실행할 수는 없습니다. 비교와 설명까지만 제공합니다.
+8) search_knowledge 결과를 인용할 때는 문서의 source를 함께 밝히고, 문서에 없는 내용은 덧붙이지 않습니다.
+   출처가 '교체 필요' 또는 '미검증'으로 표시된 문서는 확정된 사실처럼 말하지 말고 확인이 필요하다고 안내합니다.
+9) search_knowledge 의 confidence는 검색 점수에 따른 참고 신호입니다. low는 '이 문서가 질문과
+   맞지 않을 수 있다'는 경고이지 무조건 버리라는 뜻이 아닙니다. low가 붙었으면 문서 내용이
+   질문에 실제로 답하는지 먼저 확인하고,
+   - 답한다면 인용하되 단정적인 표현은 피합니다.
+   - 답하지 않는다면(예: 다른 상품·다른 제도를 설명하는 문서) 억지로 끌어다 쓰지 말고,
+     해당 내용은 아직 자료가 없다고 밝힌 뒤 어디서 확인할지(금융회사 공시, 주무기관 공고) 안내합니다.
 """
 
 
@@ -181,6 +191,13 @@ async def _run_bedrock_agent(
 
 ROUTING_RULES: list[tuple[str, tuple[str, ...]]] = [
     ("run_scenario_simulation", ("시나리오", "만약", "올리면", "늘리면", "줄이면", "시뮬", "바꾸면", "오르면")),
+    (
+        "search_knowledge",
+        (
+            "우대", "조건", "자격", "대상", "청년도약", "청약", "정책", "비과세",
+            "세금", "중도해지", "해지", "한도", "뜻", "이란", "무엇", "차이", "예금자보호",
+        ),
+    ),
     ("search_products", ("적금", "예금", "상품", "추천", "비교", "금리", "가입")),
     ("get_roadmap", ("로드맵", "계획", "순서", "부채", "대출", "상환", "우선")),
     ("get_financial_state", ("목표", "달성", "기간", "얼마나", "자산", "저축", "소비", "현황")),
@@ -197,6 +214,10 @@ def _route_tools(message: str) -> list[str]:
 
 
 def _fallback_params(name: str, message: str) -> dict[str, Any]:
+    if name == "search_knowledge":
+        # 키워드 라우팅 경로에서는 사용자 문장을 그대로 질의로 쓴다.
+        return {"query": message, "limit": 2}
+
     if name == "search_products":
         return {"productType": "deposit" if "예금" in message else "saving", "limit": 3}
 
@@ -296,8 +317,39 @@ def _format_roadmap_reply(result: dict[str, Any]) -> str:
     return reply.strip()
 
 
+def _format_knowledge_reply(result: dict[str, Any]) -> str:
+    documents = result.get("documents") or []
+    if not documents:
+        return (
+            f"'{result['query']}'에 대한 지식 문서를 찾지 못했어요. "
+            "질문을 조금 더 구체적으로 적어 주시면 다시 찾아볼게요."
+        )
+
+    # 폴백 경로에는 문서 적합성을 판단할 모델이 없다.
+    # 신뢰도가 낮으면 버리지 않고 단서를 붙여 넘긴다 — 맞는 문서가 낮은 점수를 받는 경우가 있다.
+    confident = [doc for doc in documents if doc.get("confidence") == "high"]
+    uncertain = not confident
+    top = (confident or documents)[0]
+
+    # 폴백 경로에는 요약할 모델이 없으므로 원문 앞부분을 그대로 인용한다.
+    excerpt = " ".join(top["text"].split())
+    if len(excerpt) > 220:
+        excerpt = excerpt[:220] + "…"
+
+    prefix = "질문과 정확히 맞는 자료는 못 찾았고, 관련될 수 있는 문서만 있어요. " if uncertain else ""
+    reply = f"{prefix}[{top['title']}] {excerpt} "
+    if top.get("source"):
+        reply += f"(출처: {top['source']}) "
+    if len(confident) > 1:
+        reply += f"관련 문서로 '{confident[1]['title']}'도 있어요. "
+    if uncertain:
+        reply += "정확한 조건은 금융회사 공시나 주무기관 공고로 확인해 주세요. "
+    return reply
+
+
 _FORMATTERS = {
     "search_products": _format_products_reply,
+    "search_knowledge": _format_knowledge_reply,
     "run_scenario_simulation": _format_simulation_reply,
     "get_roadmap": _format_roadmap_reply,
 }

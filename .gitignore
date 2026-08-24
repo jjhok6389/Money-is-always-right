@@ -22,3 +22,10 @@ frontend/.vite/
 .idea/
 .vscode/
 *.log
+
+# 지식 인덱스 빌드 산출물 (scripts/build_knowledge_index.py 로 재생성)
+backend/data/knowledge_index.json
+
+# 평가 실행 산출물 (scripts/eval_knowledge.py). 평가 세트 자체는 커밋 대상
+backend/data/eval/.query_cache.json
+backend/data/eval/runs/

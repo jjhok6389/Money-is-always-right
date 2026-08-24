@@ -1,0 +1,32 @@
+{"id": "eval-001", "query": "중도해지이율이 뭐야?", "category": null, "expected": ["glossary-early-termination"], "group": "glossary"}
+{"id": "eval-002", "query": "단리랑 복리 차이가 뭐야", "category": null, "expected": ["glossary-simple-compound"], "group": "glossary"}
+{"id": "eval-003", "query": "이자에 세금 얼마나 떼?", "category": null, "expected": ["glossary-tax"], "group": "glossary"}
+{"id": "eval-004", "query": "은행 망하면 내 돈 어떻게 돼?", "category": null, "expected": ["glossary-deposit-protection"], "group": "glossary", "note": "용어를 직접 안 쓴 질문"}
+{"id": "eval-005", "query": "정액적립식이 무슨 뜻이야", "category": null, "expected": ["glossary-installment-type"], "group": "glossary"}
+{"id": "eval-006", "query": "우대금리는 어떻게 받는 거야?", "category": null, "expected": ["glossary-preferential-rate"], "group": "glossary"}
+{"id": "eval-007", "query": "비상금은 얼마나 있어야 해?", "category": null, "expected": ["glossary-emergency-fund"], "group": "glossary"}
+{"id": "eval-008", "query": "빚부터 갚아야 해 저축부터 해야 해?", "category": null, "expected": ["glossary-debt-priority"], "group": "glossary"}
+{"id": "eval-009", "query": "안정추구형이면 위험을 얼마나 감수하는 거야", "category": null, "expected": ["glossary-investment-propensity"], "group": "glossary"}
+{"id": "eval-010", "query": "적금 월 납입 한도가 왜 있어?", "category": null, "expected": ["glossary-max-limit"], "group": "glossary"}
+{"id": "eval-011", "query": "예금이랑 적금 뭐가 달라", "category": null, "expected": ["glossary-deposit-vs-saving"], "group": "paraphrase"}
+{"id": "eval-012", "query": "만기 전에 깨면 이자 어떻게 돼요", "category": null, "expected": ["glossary-early-termination"], "group": "paraphrase", "note": "eval-001과 동일 정답, 용어 미사용"}
+{"id": "eval-013", "query": "소득에서 얼마나 떼서 모으는 비율을 뭐라고 해?", "category": null, "expected": ["glossary-savings-rate"], "group": "paraphrase"}
+{"id": "eval-014", "query": "청년도약계좌 가입 조건 알려줘", "category": null, "expected": ["policy-placeholder-01"], "group": "policy", "note": "문서는 자리표시자 — 검색 성공해도 답변 불가"}
+{"id": "eval-015", "query": "주택청약종합저축이 뭐야", "category": null, "expected": ["policy-placeholder-02"], "group": "policy"}
+{"id": "eval-016", "query": "청년 우대형 청약통장 조건 알려줘", "category": null, "expected": ["policy-placeholder-02"], "group": "policy"}
+{"id": "eval-017", "query": "청년내일저축계좌 자격 알려줘", "category": null, "expected": [], "group": "gap", "reason": "corpus-gap"}
+{"id": "eval-018", "query": "ISA 계좌 비과세 한도가 얼마야", "category": null, "expected": [], "group": "gap", "reason": "corpus-gap"}
+{"id": "eval-019", "query": "신용점수 올리려면 어떻게 해야 해", "category": null, "expected": ["glossary-credit-score"], "group": "glossary", "note": "코퍼스 공백이었다가 문서 추가로 해소된 케이스"}
+{"id": "eval-020", "query": "내 목표 달성까지 얼마나 걸릴까?", "category": null, "expected": [], "group": "negative", "reason": "other-tool", "note": "get_financial_state", "expectedTools": ["get_financial_state"]}
+{"id": "eval-021", "query": "저축률을 10% 올리면 어떻게 될까?", "category": null, "expected": [], "group": "negative", "reason": "other-tool", "note": "run_scenario_simulation", "expectedTools": ["run_scenario_simulation"]}
+{"id": "eval-022", "query": "지금 내 추정 자산이 얼마야", "category": null, "expected": [], "group": "negative", "reason": "other-tool", "note": "get_financial_state", "expectedTools": ["get_financial_state"]}
+{"id": "eval-023", "query": "우리SUPER주거래적금 우대조건 알려줘", "category": null, "expected": ["title:우리SUPER주거래적금"], "group": "product"}
+{"id": "eval-024", "query": "카카오뱅크 26주적금은 어떻게 우대금리 받아?", "category": null, "expected": ["title:26주적금"], "group": "product"}
+{"id": "eval-025", "query": "NH1934월복리적금 가입 대상이 누구야", "category": null, "expected": ["title:NH1934월복리적금"], "group": "product"}
+{"id": "eval-026", "query": "토스뱅크 굴비 적금 조건 알려줘", "category": null, "expected": ["title:굴비 적금"], "group": "product"}
+{"id": "eval-027", "query": "WON플러스예금 가입 방법 알려줘", "category": null, "expected": ["title:WON플러스예금"], "group": "product"}
+{"id": "eval-028", "query": "IBK중기근로자우대적금 자격이 어떻게 돼", "category": null, "expected": ["title:IBK중기근로자우대적금"], "group": "product"}
+{"id": "eval-029", "query": "제주은행 MZ 플랜적금 우대조건", "category": null, "expected": ["title:MZ 플랜적금"], "group": "product"}
+{"id": "eval-030", "query": "KB내맘대로적금 어떻게 가입해?", "category": null, "expected": ["title:KB내맘대로적금"], "group": "product"}
+{"id": "eval-031", "query": "청년내일저축계좌", "category": "policy", "expected": [], "group": "gap", "reason": "corpus-gap", "note": "모델이 질의를 짧게 줄여 보내는 실제 사례. 짧을수록 키워드 점수가 부풀려짐"}
+{"id": "eval-032", "query": "ISA", "category": null, "expected": [], "group": "gap", "reason": "corpus-gap", "note": "극단적으로 짧은 질의"}
