@@ -14,11 +14,28 @@ function formatDate(value) {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
 }
 
-const BUCKET_LABEL = {
-  low: '저변동',
-  mid: '중변동',
-  high: '고변동',
-};
+function etfRiskCopy(etf) {
+  if (etf?.reason && String(etf.reason).includes('\n')) {
+    return etf.reason;
+  }
+  const vol =
+    etf?.volatilityPct != null && Number.isFinite(Number(etf.volatilityPct))
+      ? Number(etf.volatilityPct).toFixed(1)
+      : '-';
+  const universeSize = etf?.universeSize || 15;
+  const percentile = etf?.volPercentile ?? '-';
+  const label =
+    etf?.riskLabel ||
+    { low: '🟢 저변동 상품', mid: '🟡 중변동 상품', high: '🔴 고변동 상품' }[etf?.riskLevel] ||
+    {
+      ultra_low: '🟢 저변동 상품',
+      low_mid: '🟢 저변동 상품',
+      mid_high: '🟡 중변동 상품',
+      high: '🔴 고변동 상품',
+    }[etf?.volatilityBucket] ||
+    '🟢 저변동 상품';
+  return `최근 6개월 변동성 ${vol}%\n유니버스 ${universeSize}종 중 변동성 하위 ${percentile}%\n${label}`;
+}
 
 export default function DashboardPage() {
   const { profile } = useAuth();
@@ -33,7 +50,7 @@ export default function DashboardPage() {
   const [etfDetailError, setEtfDetailError] = useState('');
 
   const propensity = profile?.investmentPropensity || 'neutral';
-  const showEtfSection = !['stable', 'stable_seeking'].includes(propensity);
+  const showEtfSection = propensity !== 'stable';
 
   const load = async () => {
     if (!profile) {
@@ -249,7 +266,7 @@ export default function DashboardPage() {
               {!showEtfSection ? (
                 <p className="muted">
                   {data.etfMessage ||
-                    '안정형·안정추구형은 예·적금 중심이라 ETF 추천을 생략합니다. 투자 비중을 키우려면 성향을 조정해 보세요.'}
+                    '안정형은 예·적금·연금 중심이라 ETF 추천을 생략합니다.'}
                 </p>
               ) : (
                 <>
@@ -267,25 +284,9 @@ export default function DashboardPage() {
                         className="product-card etf-card"
                         onClick={() => openEtfDetail(etf)}
                       >
-                        <p className="product-bank">
-                          {etf.symbol} · {BUCKET_LABEL[etf.volatilityBucket] || etf.volatilityBucket}
-                        </p>
+                        <p className="product-bank">{etf.symbol}</p>
                         <h2>{etf.name}</h2>
-                        <dl>
-                          <div>
-                            <dt>6개월 변동성</dt>
-                            <dd>{etf.volatilityPct?.toFixed(2)}%</dd>
-                          </div>
-                          <div>
-                            <dt>6개월 수익률</dt>
-                            <dd>
-                              {etf.change6mPct != null
-                                ? `${etf.change6mPct > 0 ? '+' : ''}${etf.change6mPct.toFixed(2)}%`
-                                : '-'}
-                            </dd>
-                          </div>
-                        </dl>
-                        <p className="product-note">{etf.reason}</p>
+                        <p className="product-note etf-risk-lines">{etfRiskCopy(etf)}</p>
                       </button>
                     ))}
                   </div>
@@ -347,19 +348,8 @@ export default function DashboardPage() {
                     ? 'KRX 일별 종가'
                     : etfDetail.message || '모의 시계열'}
                 </p>
+                <p className="product-note etf-risk-lines">{etfRiskCopy(etfDetail.etf)}</p>
                 <dl className="etf-detail-stats">
-                  <div>
-                    <dt>6개월 변동성</dt>
-                    <dd>{etfDetail.etf.volatilityPct.toFixed(2)}%</dd>
-                  </div>
-                  <div>
-                    <dt>6개월 수익률</dt>
-                    <dd>
-                      {etfDetail.etf.change6mPct != null
-                        ? `${etfDetail.etf.change6mPct > 0 ? '+' : ''}${etfDetail.etf.change6mPct.toFixed(2)}%`
-                        : '-'}
-                    </dd>
-                  </div>
                   <div>
                     <dt>최근 종가</dt>
                     <dd>
@@ -368,9 +358,12 @@ export default function DashboardPage() {
                         : '-'}
                     </dd>
                   </div>
+                  <div>
+                    <dt>기준일</dt>
+                    <dd>{etfDetail.etf.asOfDate ? formatDate(etfDetail.etf.asOfDate) : '-'}</dd>
+                  </div>
                 </dl>
                 <EtfVolatilityChart series={etfDetail.etf.series} />
-                <p className="product-note">{etfDetail.etf.reason}</p>
                 <p className="disclaimer-inline">{etfDetail.etf.disclaimer}</p>
               </>
             )}

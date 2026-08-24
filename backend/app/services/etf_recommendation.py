@@ -1,10 +1,8 @@
 """
-Map investment propensity → filtered ETF summaries with Korean reasons.
+ETF recommendation from the persisted metrics ledger (no KRX on the request path).
 """
 
 from __future__ import annotations
-
-from typing import Optional
 
 from app.models.etf import (
     EtfDetail,
@@ -12,8 +10,10 @@ from app.models.etf import (
     EtfListResponse,
     EtfPricePoint,
     EtfSummary,
+    RiskLevel,
 )
-from app.services import krx_etf_client
+from app.services import etf_store, krx_etf_client
+from app.services.etf_store import BUCKETS_BY_PROPENSITY, POLICY_KO
 
 VALID_PROPENSITIES = {
     "stable",
@@ -23,31 +23,17 @@ VALID_PROPENSITIES = {
     "very_aggressive",
 }
 
-# stable* → no ETF list (cash/deposit focused)
-# neutral → low volatility tercile
-# aggressive → mid + high
-# very_aggressive → high only
-BUCKETS_BY_PROPENSITY: dict[str, set[str]] = {
-    "stable": set(),
-    "stable_seeking": set(),
-    "neutral": {"low"},
-    "aggressive": {"mid", "high"},
-    "very_aggressive": {"high"},
+RISK_LEVEL_BY_BUCKET = {
+    "ultra_low": "low",
+    "low_mid": "low",
+    "mid_high": "mid",
+    "high": "high",
 }
 
-REASON_BY_PROPENSITY = {
-    "neutral": (
-        "최근 6개월 일간 변동성이 동일 유니버스 대비 낮은 편이라 "
-        "위험중립형 투자 비중에 맞습니다."
-    ),
-    "aggressive": (
-        "변동성이 중간~높은 편이라 적극투자형 투자 버킷 탐색용입니다. "
-        "과거 변동 ≠ 미래 수익."
-    ),
-    "very_aggressive": (
-        "변동성이 높아 공격투자형 투자 버킷 탐색용입니다. "
-        "과거 변동 ≠ 미래 수익."
-    ),
+RISK_LABEL = {
+    "low": "🟢 저변동 상품",
+    "mid": "🟡 중변동 상품",
+    "high": "🔴 고변동 상품",
 }
 
 
@@ -58,97 +44,152 @@ def normalize_propensity(raw: str | None) -> str:
     return value
 
 
-def _reason_for(propensity: str, bucket: str) -> str:
-    if propensity in REASON_BY_PROPENSITY:
-        return REASON_BY_PROPENSITY[propensity]
-    if bucket == "low":
-        return REASON_BY_PROPENSITY["neutral"]
-    if bucket == "high":
-        return REASON_BY_PROPENSITY["very_aggressive"]
-    return REASON_BY_PROPENSITY["aggressive"]
+def _risk_level(bucket: str) -> RiskLevel:
+    return RISK_LEVEL_BY_BUCKET.get(bucket, "mid")  # type: ignore[return-value]
+
+
+def _percentiles(rows: list[dict]) -> dict[str, int]:
+    ranked = [
+        row
+        for row in rows
+        if row.get("eligible") and row.get("vol60") is not None
+    ]
+    ordered = sorted(
+        ranked,
+        key=lambda row: (float(row.get("vol60") or 0), str(row.get("symbol") or "")),
+    )
+    n = len(ordered) or 1
+    return {
+        str(row["symbol"]): max(1, round((index + 1) / n * 100))
+        for index, row in enumerate(ordered)
+    }
+
+
+def _card_reason(vol_pct: float, percentile: int, universe_size: int, risk_level: str) -> str:
+    label = RISK_LABEL.get(risk_level, RISK_LABEL["mid"])
+    return (
+        f"최근 6개월 변동성 {vol_pct:.1f}%\n"
+        f"유니버스 {universe_size}종 중 변동성 하위 {percentile}%\n"
+        f"{label}"
+    )
+
+
+def _source_from_rows(rows: list[dict]) -> str:
+    if any(row.get("source") == "krx" for row in rows):
+        return "krx"
+    return "mock"
+
+
+def _universe_size() -> int:
+    return len(krx_etf_client.list_universe())
+
+
+def _to_summary(row: dict, percentiles: dict[str, int], universe_size: int) -> EtfSummary:
+    bucket = row.get("bucket") or "low_mid"
+    change = row.get("change60Pct")
+    vol_pct = float(row.get("vol60Pct") or 0)
+    percentile = percentiles.get(str(row["symbol"]), 50)
+    risk = _risk_level(bucket)
+    return EtfSummary(
+        symbol=row["symbol"],
+        name=row.get("name") or row["symbol"],
+        volatility=float(row.get("vol60") or 0),
+        volatilityPct=vol_pct,
+        volatilityBucket=bucket,
+        change6mPct=change,
+        change60Pct=change,
+        lastPrice=row.get("lastPrice"),
+        asOfDate=row.get("asOfDate"),
+        volPercentile=percentile,
+        universeSize=universe_size,
+        riskLevel=risk,
+        riskLabel=RISK_LABEL[risk],
+        reason=_card_reason(vol_pct, percentile, universe_size, risk),
+    )
+
+
+def _price_points(dates: list[str], closes: list[float]) -> list[EtfPricePoint]:
+    window = krx_etf_client.TRADING_DAYS_WINDOW
+    return [
+        EtfPricePoint(date=day, close=close)
+        for day, close in zip(dates[-window:], closes[-window:])
+    ]
 
 
 async def recommend_etfs(propensity: str | None) -> EtfListResponse:
+    await etf_store.ensure_seeded()
     prop = normalize_propensity(propensity)
     allowed = BUCKETS_BY_PROPENSITY.get(prop, BUCKETS_BY_PROPENSITY["neutral"])
+    rows = etf_store.list_metrics()
+    source = _source_from_rows(rows)
+    universe_size = _universe_size()
+    percentiles = _percentiles(rows)
 
-    if not allowed:
+    if prop == "stable" or not allowed:
         return EtfListResponse(
-            source="mock",
+            source=source,
             propensity=prop,
             count=0,
             etfs=[],
-            message="안정형·안정추구형은 예·적금 중심이라 ETF 추천을 생략합니다.",
+            message=POLICY_KO["stable"],
         )
 
-    series_list, source, message = await krx_etf_client.load_universe_series()
-    vols: dict[str, float] = {}
-    stats_by_symbol: dict[str, tuple] = {}
-    for series in series_list:
-        stats = krx_etf_client.compute_volatility(series.closes)
-        vols[series.symbol] = stats.volatility
-        stats_by_symbol[series.symbol] = (series, stats)
-
-    buckets = krx_etf_client.assign_buckets(vols)
-    summaries: list[EtfSummary] = []
-    for symbol, (series, stats) in stats_by_symbol.items():
-        bucket = buckets.get(symbol, "mid")
-        if bucket not in allowed:
+    picked: list[EtfSummary] = []
+    for row in rows:
+        if not row.get("eligible") or row.get("bucket") not in allowed:
             continue
-        summaries.append(
-            EtfSummary(
-                symbol=series.symbol,
-                name=series.name,
-                volatility=stats.volatility,
-                volatilityPct=stats.volatility_pct,
-                volatilityBucket=bucket,
-                change6mPct=stats.change_6m_pct,
-                lastPrice=stats.last_price,
-                reason=_reason_for(prop, bucket),
-            )
-        )
+        picked.append(_to_summary(row, percentiles, universe_size))
 
-    summaries.sort(key=lambda item: item.volatility)
+    picked.sort(key=lambda item: item.volatility)
+    if prop == "stable_seeking":
+        picked = picked[:2]
+
     return EtfListResponse(
         source=source,
         propensity=prop,
-        count=len(summaries),
-        etfs=summaries,
-        message=message,
+        count=len(picked),
+        etfs=picked,
+        message=POLICY_KO.get(prop),
     )
 
 
-async def get_etf_detail(
-    symbol: str,
-    propensity: str | None = None,
-) -> EtfDetailResponse:
-    prop = normalize_propensity(propensity)
-    series, source, message = await krx_etf_client.fetch_daily_prices(symbol)
-    stats = krx_etf_client.compute_volatility(series.closes)
+async def get_etf_detail(symbol: str, propensity: str | None = None) -> EtfDetailResponse:
+    await etf_store.ensure_seeded()
+    normalize_propensity(propensity)
+    code = symbol.strip()
+    row = etf_store.get_metrics(code)
+    series = etf_store.get_price_series(code, last_n=krx_etf_client.TRADING_DAYS_WINDOW)
+    rows = etf_store.list_metrics()
+    percentiles = _percentiles(rows)
+    universe_size = _universe_size()
+    if row is None:
+        meta = krx_etf_client.lookup_meta(code)
+        mock = krx_etf_client.mock_series(code)
+        stats = krx_etf_client.compute_volatility(mock.closes)
+        fallback = {
+            "symbol": code,
+            "name": str(meta.get("name") or code),
+            "vol60": stats.volatility,
+            "vol60Pct": stats.volatility_pct,
+            "bucket": "low_mid",
+            "change60Pct": stats.change_60_pct,
+            "lastPrice": stats.last_price,
+            "asOfDate": None,
+        }
+        summary = _to_summary(fallback, percentiles, universe_size)
+        detail = EtfDetail(**summary.model_dump(), series=_price_points(mock.dates, mock.closes))
+        return EtfDetailResponse(
+            source="mock",
+            etf=detail,
+            message="저장된 지표가 없어 모의 시계열을 사용했습니다.",
+        )
 
-    # Bucket relative to full universe so the label stays consistent with lists.
-    all_series, _, _ = await krx_etf_client.load_universe_series()
-    vols = {
-        item.symbol: krx_etf_client.compute_volatility(item.closes).volatility
-        for item in all_series
-    }
-    if series.symbol not in vols:
-        vols[series.symbol] = stats.volatility
-    bucket = krx_etf_client.assign_buckets(vols).get(series.symbol, "mid")
-
-    points = [
-        EtfPricePoint(date=day, close=close)
-        for day, close in zip(series.dates, series.closes)
-    ]
-    detail = EtfDetail(
-        symbol=series.symbol,
-        name=series.name,
-        volatility=stats.volatility,
-        volatilityPct=stats.volatility_pct,
-        volatilityBucket=bucket,
-        change6mPct=stats.change_6m_pct,
-        lastPrice=stats.last_price,
-        reason=_reason_for(prop, bucket),
-        series=points,
+    if series is None:
+        series = krx_etf_client.mock_series(code, row.get("name"))
+    summary = _to_summary(row, percentiles, universe_size)
+    detail = EtfDetail(**summary.model_dump(), series=_price_points(series.dates, series.closes))
+    return EtfDetailResponse(
+        source=row.get("source") or "mock",
+        etf=detail,
+        message=None,
     )
-    return EtfDetailResponse(source=source, etf=detail, message=message)

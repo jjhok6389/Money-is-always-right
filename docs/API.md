@@ -338,17 +338,20 @@ Query: `topFinGrpNo`, `pageNo` (동일)
 
 ---
 
-## 5.1 ETF — KRX 일별 공시 기반 추천
+## 5.1 ETF — 6개월 변동성 기반 추천
 
 Prefix: `/api/etf`
 
 | Method | Path | 설명 |
 |--------|------|------|
-| GET | `/api/etf/recommendations?propensity=` | 성향별 ETF 리스트 (안정형·안정추구형은 빈 배열) |
-| GET | `/api/etf/{symbol}` | 상세 + 6개월 종가 시계열 + 추천 이유 |
+| GET | `/api/etf/recommendations?propensity=` | 성향별 ETF 리스트. 안정형은 빈 배열, 안정추구는 초저 1~2개 |
+| GET | `/api/etf/{symbol}` | 상세 + 약 126영업일(6개월) 종가 시계열 + 추천 이유 |
+| POST | `/api/etf/sync` | KRX(또는 mock) 원장 갱신. 대시보드 요청 경로가 아님 |
 
-- `KRX_AUTH_KEY` 없으면 `source=mock`
-- 변동성 = 일간 수익률 표준편차 × √252 (연율화), UI 표기는 「6개월 변동성」
+- 요청 경로는 `etfMetrics`만 읽습니다. KRX는 sync 배치에서만 호출합니다.
+- 변동성 = 최근 약 126 영업일(6개월) 일간 수익률 표준편차 × √252 (연율화), UI 「6개월 변동성」
+- 버킷: 유니버스 상대 사분위 `ultra_low | low_mid | mid_high | high`
+- `KRX_AUTH_KEY` 없거나 401이면 `source=mock` (첫 401에서 즉시 중단)
 
 ---
 

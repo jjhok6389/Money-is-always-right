@@ -543,6 +543,11 @@ th {
   font-size: 0.85rem;
 }
 
+.etf-risk-lines {
+  white-space: pre-line;
+  line-height: 1.55;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -875,7 +880,7 @@ th {
 
 .etf-detail-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
   margin: 0.75rem 0 1rem;
 }
