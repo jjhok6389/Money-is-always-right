@@ -14,9 +14,17 @@ from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable
 
 from app.models.dashboard import DashboardRequest, DashboardResponse
+from app.models.knowledge import CATEGORY_LABELS, KnowledgeHit
 from app.models.product import ProductListResponse, ProductType
 from app.models.simulation import SimulationRequest
-from app.services import dashboard_service, etf_knowledge, etf_recommendation, fss_client, simulation_service
+from app.services import (
+    dashboard_service,
+    etf_knowledge,
+    etf_recommendation,
+    fss_client,
+    knowledge_service,
+    simulation_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +36,7 @@ TOOL_LABELS = {
     "search_etfs": "ETF 추천 조회",
     "get_etf_detail": "ETF 상세 조회",
     "search_etf_knowledge": "ETF 지식 검색",
+    "search_knowledge": "금융지식 검색",
 }
 
 # Onboarding does not collect assets/debt yet, so the dashboard estimates them.
@@ -42,6 +51,7 @@ class AgentContext:
     profile: dict[str, Any]
     _dashboard: DashboardResponse | None = None
     _products: dict[str, ProductListResponse] = field(default_factory=dict)
+    _knowledge: dict[tuple[str, str | None, int], list[KnowledgeHit]] = field(default_factory=dict)
 
     async def dashboard(self) -> DashboardResponse:
         if self._dashboard is None:
@@ -56,6 +66,17 @@ class AgentContext:
         if product_type not in self._products:
             self._products[product_type] = await fss_client.fetch_products(product_type)
         return self._products[product_type]
+
+    async def knowledge(
+        self,
+        query: str,
+        category: str | None,
+        limit: int,
+    ) -> list[KnowledgeHit]:
+        key = (query, category, limit)
+        if key not in self._knowledge:
+            self._knowledge[key] = await knowledge_service.search(query, category, limit)
+        return self._knowledge[key]
 
 
 # --- tool implementations -------------------------------------------------
@@ -247,6 +268,41 @@ async def _get_roadmap(_params: dict[str, Any], ctx: AgentContext) -> dict[str, 
     }
 
 
+async def _search_knowledge(params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
+    query = str(params.get("query") or "").strip()
+    if not query:
+        return {"error": "검색어(query)가 필요합니다."}
+
+    category = params.get("category")
+    if category not in CATEGORY_LABELS:
+        category = None
+    limit = max(1, min(int(params.get("limit") or 3), 5))
+
+    hits = await ctx.knowledge(query, category, limit)
+    return {
+        "query": query,
+        "category": category,
+        "matchType": hits[0].matchType if hits else None,
+        # 하나라도 high 면 high. 전부 low 면 근거로 쓰기에 약하다는 신호.
+        "bestConfidence": (
+            "high" if any(hit.confidence == "high" for hit in hits) else "low"
+        ) if hits else None,
+        "count": len(hits),
+        "documents": [
+            {
+                "title": hit.doc.title,
+                "confidence": hit.confidence,
+                "category": hit.doc.category,
+                "text": hit.doc.text,
+                "source": hit.doc.source,
+                "updatedAt": hit.doc.updatedAt,
+                "score": hit.score,
+            }
+            for hit in hits
+        ],
+    }
+
+
 _HANDLERS: dict[str, Callable[[dict[str, Any], AgentContext], Awaitable[dict[str, Any]]]] = {
     "get_financial_state": _get_financial_state,
     "search_products": _search_products,
@@ -255,6 +311,7 @@ _HANDLERS: dict[str, Callable[[dict[str, Any], AgentContext], Awaitable[dict[str
     "search_etfs": _search_etfs,
     "get_etf_detail": _get_etf_detail,
     "search_etf_knowledge": _search_etf_knowledge,
+    "search_knowledge": _search_knowledge,
 }
 
 
@@ -374,6 +431,37 @@ TOOL_SPECS: list[dict[str, Any]] = [
             },
         }
     },
+    {
+        "toolSpec": {
+            "name": "search_knowledge",
+            "description": (
+                "금융 지식 문서를 검색한다. 상품 우대조건·가입대상 공시 원문, 청년 정책금융 자격요건, "
+                "금융 용어 설명을 근거와 함께 돌려준다. 수치가 아닌 '조건·자격·의미'를 묻는 질문에 사용한다. "
+                "ETF 개념·변동성 숫자는 search_etf_knowledge / search_etfs를 쓴다."
+            ),
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "검색할 자연어 질의. 사용자 질문을 그대로 넣어도 된다.",
+                        },
+                        "category": {
+                            "type": "string",
+                            "enum": ["glossary", "policy", "product_terms"],
+                            "description": (
+                                "glossary=금융용어, policy=청년 정책금융, "
+                                "product_terms=상품 공시조건. 생략하면 전체 검색"
+                            ),
+                        },
+                        "limit": {"type": "integer", "description": "반환 문서 수 1~5, 기본값 3"},
+                    },
+                    "required": ["query"],
+                }
+            },
+        }
+    },
 ]
 
 
@@ -424,4 +512,13 @@ def summarize(name: str, result: dict[str, Any]) -> str:
         return f"{result.get('name')} 6개월 변동성 {result.get('vol60Pct')}%"
     if name == "search_etf_knowledge":
         return f"ETF 지식 {len(result.get('chunks') or [])}건 ({result.get('source')})"
+    if name == "search_knowledge":
+        if not result["count"]:
+            return f"'{result['query']}' 관련 문서를 찾지 못했습니다."
+        scope = CATEGORY_LABELS.get(result["category"] or "", "전체")
+        mode = {"both": "벡터+키워드", "vector": "벡터", "keyword": "키워드"}.get(
+            result["matchType"], "검색"
+        )
+        note = "" if result["bestConfidence"] == "high" else ", 신뢰도 낮음"
+        return f"{scope} 문서 {result['count']}건 ({mode}{note})"
     return "완료"

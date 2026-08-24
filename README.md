@@ -24,6 +24,7 @@
 | Auth / DB | Firebase Auth, Cloud Firestore |
 | 금융상품 | 금융감독원 금융상품한눈에 Open API |
 | AI | AWS Bedrock (Claude) · 키 없으면 로컬 fallback |
+| 지식 검색 | Bedrock Titan 임베딩 + 로컬 JSON 인덱스 · 키 없으면 키워드 검색 |
 
 ---
 
@@ -36,7 +37,8 @@ React (:5173)  ──Firebase Auth / Firestore──┐
                                   ├ users / transactions / products
                                   ├ dashboard / simulation
                                   └ coach → Bedrock (or fallback)
-                                         products → FSS (or mock)
+                                         ├ products   → FSS (or mock)
+                                         └ knowledge  → 로컬 인덱스 (벡터 or 키워드)
 ```
 
 1. 가입·로그인 → Firebase Auth  
@@ -52,6 +54,8 @@ React (:5173)  ──Firebase Auth / Firestore──┐
 .
 ├── frontend/          # React UI (pages, components, services, firebase)
 ├── backend/           # FastAPI (routes, services, models)
+│   ├── data/knowledge/    # 코치 지식 코퍼스 (JSONL)
+│   └── scripts/           # 지식 인덱스 빌드 CLI
 ├── docs/              # API 명세서 (MD + CSV)
 ├── firestore.rules
 ├── firebase.json
@@ -119,8 +123,14 @@ python -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env          # 최초 1회
+python -m scripts.build_knowledge_index   # 코치 지식 인덱스 (선택, 최초 1회)
 uvicorn app.main:app --reload --port 8000
 ```
+
+> `build_knowledge_index` 는 `backend/data/knowledge/*.jsonl` 을 읽어
+> `backend/data/knowledge_index.json` 을 만든다. AWS 키가 있으면 Bedrock 임베딩으로
+> 벡터 검색이, 없으면 키워드 검색이 쓰인다. **인덱스를 만들지 않아도 코치는 원문 코퍼스로
+> 키워드 검색해 동작한다.** 코퍼스 스키마는 `backend/data/knowledge/README.md` 참고.
 
 ```powershell
 # Terminal 2 — Frontend
@@ -219,8 +229,8 @@ YP2026-XX 요약내용
 |------|------|------|----------------|
 | P0 | YP2026-47 | 페르소나 프리셋 로드 · CSV 업로드 | 프리셋 JSON + CSV 파서 → 거래 파이프라인 입력으로 연결 |
 | P0 | YP2026-54 | 재무 상태 스냅샷 DB | Firestore `snapshots/{uid}` 또는 서브컬렉션에 시점별 자산·부채·가정 저장, 시뮬레이션 불러오기 |
-| P1 | YP2026-49 | 청년 정책금융 메타데이터 | 정책상품(청년도약·청약 등) 정적/관리 DB + 대시보드·코치 추천에 반영 |
-| P1 | YP2026-59 | 금융상품 Q&A 체인 강화 | RAG/상품 컨텍스트를 Bedrock에 체계적으로 주입, 비교·자격 질문 품질 향상 |
+| P1 | YP2026-49 | 청년 정책금융 메타데이터 | 코퍼스 틀은 `backend/data/knowledge/policy.jsonl` 에 있음(자리표시자 2건). **공고 원문으로 교체 필요** + 대시보드 추천에 반영 |
+| P1 | YP2026-59 | 금융상품 Q&A 체인 강화 | ⏳ 기반 완료 — `search_knowledge` 도구 + 로컬 벡터 인덱스 구축됨. 남은 일: 코퍼스 확충 |
 | P1 | — | Bedrock 실연동 안정화 | AWS 키·모델 권한, 타임아웃/재시도, 대화 이력 Firestore 저장 |
 
 ### 2. 중기 — 품질 · 제품화
@@ -259,7 +269,9 @@ YP2026-XX 요약내용
 **AI 코어 (YP2026-32)**  
 - [x] 플로팅 챗봇 · fallback  
 - [x] Bedrock 연동 코드 경로  
-- [ ] 상용 키 기준 안정화 · Q&A 체인 강화 (58, 59)  
+- [x] 지식 검색 도구 `search_knowledge` · 로컬 벡터 인덱스 (59 기반)  
+- [ ] 상용 키 기준 안정화 (58)  
+- [ ] 지식 코퍼스 확충 — 정책금융 공고 원문 (49, 59)  
 
 **배포·산출물 (YP2026-38)**  
 - [x] API 명세 (64)  

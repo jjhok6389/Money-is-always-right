@@ -593,7 +593,17 @@ baseline / scenario를 직접 전달.
 
 Prefix: `/api/coach`
 
-AWS Bedrock Converse 호출. 실패/키 없음 시 로컬 한국어 fallback.
+AWS Bedrock Converse 호출(toolConfig 기반 도구 사용). 실패/키 없음 시 동일한 도구를 쓰는 로컬 한국어 fallback.
+
+**에이전트 도구**
+
+| 도구 | 설명 |
+|------|------|
+| `get_financial_state` | 자산·목표 달성률·저축 여력·소비 요약 |
+| `search_products` | 금감원 공시 예·적금 최고금리순 검색 |
+| `run_scenario_simulation` | 가정 변경 시 미래 자산 비교 |
+| `get_roadmap` | 실행 단계·부채 상환 우선순위 |
+| `search_knowledge` | 상품 우대조건 원문·청년 정책금융·금융용어 검색 (RAG) |
 
 ### `POST /api/coach/chat`
 
@@ -629,14 +639,23 @@ AWS Bedrock Converse 호출. 실패/키 없음 시 로컬 한국어 fallback.
 
 ```json
 {
-  "reply": "안정형 성향 기준으로는 ...",
-  "source": "fallback",
-  "modelId": null,
+  "reply": "중도해지이율은 만기 전에 해지할 때 적용되는 이율입니다 ...",
+  "source": "bedrock",
+  "modelId": "anthropic.claude-3-haiku-20240307-v1:0",
   "suggestions": [
     "내 목표 달성까지 얼마나 걸릴까?",
     "안정형에게 맞는 적금 추천해줘",
-    "변동비를 줄이려면 어디부터 줄일까?",
-    "예금이랑 적금 중 뭐가 나을까?"
+    "저축률을 10% 올리면 어떻게 될까?",
+    "대출을 먼저 갚는 게 나을까?",
+    "이 적금 우대금리는 어떻게 받아?"
+  ],
+  "toolTrace": [
+    {
+      "name": "search_knowledge",
+      "label": "금융지식 검색",
+      "status": "ok",
+      "summary": "금융용어 문서 3건 (벡터+키워드)"
+    }
   ]
 }
 ```
@@ -645,6 +664,13 @@ AWS Bedrock Converse 호출. 실패/키 없음 시 로컬 한국어 fallback.
 |----------|------|
 | `bedrock` | AWS Bedrock 응답 |
 | `fallback` | 로컬 안내 모드 |
+
+`toolTrace` 는 이번 턴에 실행된 도구 목록이며 두 경로 모두에서 채워진다.
+`status` 는 `ok` \| `error`, `summary` 는 UI에 그대로 노출되는 한 줄 요약이다.
+
+`search_knowledge` 의 요약 괄호 안은 검색 방식(`벡터+키워드` \| `벡터` \| `키워드`)이며,
+검색 점수가 기준(`KNOWLEDGE_MIN_*_SCORE`) 미만이면 `, 신뢰도 낮음` 이 덧붙는다.
+신뢰도가 낮아도 문서는 그대로 모델에 전달되고, 모델이 질문과 맞는지 판단해 답한다.
 
 **Response `502`** — Bedrock 실패 + fallback 비활성
 

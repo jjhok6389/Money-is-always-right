@@ -47,6 +47,20 @@ class Settings(BaseSettings):
     krx_auth_key: str = ""
     krx_base_url: str = "https://data-dbg.krx.co.kr/svc/apis"
 
+    # 지식 검색(RAG). 인덱스는 scripts/build_knowledge_index.py 로 생성한다.
+    bedrock_embedding_model_id: str = "amazon.titan-embed-text-v2:0"
+    bedrock_embedding_dimensions: int = 1024
+    # 빈 값이면 backend/data/knowledge_index.json 을 사용한다.
+    knowledge_index_path: str = ""
+    knowledge_top_k: int = 3
+    # 검색 결과에 confidence=high 를 붙이는 기준. 문서를 버리는 차단선이 아니라
+    # 라벨 기준이며, 낮으면 모델이 단정을 피하도록 프롬프트가 유도한다.
+    # 점수만으로는 '코퍼스에 없는 주제'를 못 거른다(짧은 질의는 무관한 문서와도 높게 나옴).
+    # 최종 방어선은 모델이 문서 내용을 읽고 판단하는 것이고, 이 값은 보조 신호다.
+    # scripts/eval_knowledge.py 로 코퍼스가 커질 때마다 재측정할 것.
+    knowledge_min_vector_score: float = 0.33
+    knowledge_min_keyword_score: float = 0.31
+
 
 @lru_cache
 def get_settings() -> Settings:
