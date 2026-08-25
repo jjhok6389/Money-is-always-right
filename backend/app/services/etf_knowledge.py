@@ -81,18 +81,7 @@ def retrieve_etf_knowledge(query: str, propensity: str | None = None) -> dict[st
         }
 
     try:
-        import boto3
-
-        client_kwargs: dict[str, Any] = {"region_name": settings.aws_region}
-        if settings.aws_access_key_id and settings.aws_secret_access_key:
-            client_kwargs["aws_access_key_id"] = settings.aws_access_key_id
-            client_kwargs["aws_secret_access_key"] = settings.aws_secret_access_key
-        client = boto3.client("bedrock-agent-runtime", **client_kwargs)
-        response = client.retrieve(
-            knowledgeBaseId=kb_id,
-            retrievalQuery={"text": query or "ETF 추천 정책"},
-            retrievalConfiguration={"vectorSearchConfiguration": {"numberOfResults": 5}},
-        )
+        response = _bedrock_retrieve(kb_id, query or "ETF 추천 정책")
         chunks: list[dict[str, str]] = []
         for item in response.get("retrievalResults") or []:
             content = (item.get("content") or {}).get("text") or ""
@@ -120,3 +109,45 @@ def retrieve_etf_knowledge(query: str, propensity: str | None = None) -> dict[st
             "chunks": _local_retrieve(query, propensity),
             "message": f"KB 조회에 실패해 로컬 정책·용어로 안내합니다. ({exc})",
         }
+
+
+def _bedrock_client():
+    import boto3
+
+    settings = get_settings()
+    client_kwargs: dict[str, Any] = {"region_name": settings.aws_region}
+    if settings.aws_access_key_id and settings.aws_secret_access_key:
+        client_kwargs["aws_access_key_id"] = settings.aws_access_key_id
+        client_kwargs["aws_secret_access_key"] = settings.aws_secret_access_key
+    return boto3.client("bedrock-agent-runtime", **client_kwargs)
+
+
+def _bedrock_retrieve(kb_id: str, query: str) -> dict[str, Any]:
+    """
+    Managed KB requires managedSearchConfiguration; classic/custom KB uses
+    vectorSearchConfiguration. Try managed first, then fall back.
+    """
+    client = _bedrock_client()
+    query_body = {"text": query}
+    configs = [
+        {"managedSearchConfiguration": {"numberOfResults": 5}},
+        {"vectorSearchConfiguration": {"numberOfResults": 5}},
+    ]
+    last_exc: Exception | None = None
+    for retrieval_configuration in configs:
+        try:
+            return client.retrieve(
+                knowledgeBaseId=kb_id,
+                retrievalQuery=query_body,
+                retrievalConfiguration=retrieval_configuration,
+            )
+        except Exception as exc:
+            last_exc = exc
+            message = str(exc)
+            # Wrong config for this KB type — try the other shape.
+            if "managedSearchConfiguration" in message or "vectorSearchConfiguration" in message:
+                logger.info("Bedrock retrieve config mismatch, trying alternate: %s", message)
+                continue
+            raise
+    assert last_exc is not None
+    raise last_exc

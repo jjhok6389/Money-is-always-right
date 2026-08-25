@@ -40,10 +40,19 @@ class Settings(BaseSettings):
     bedrock_model_id: str = "anthropic.claude-3-haiku-20240307-v1:0"
     bedrock_max_tokens: int = 1024
     bedrock_fallback_enabled: bool = True
+    # Bedrock Knowledge Base (ETF explanations for search_etf_knowledge)
     bedrock_knowledge_base_id: str = ""
+    bedrock_kb_data_source_id: str = ""
+
+    # Daily ETF batch: KRX → Firestore → kb/etf → (optional) S3 → (optional) KB ingest
+    etf_s3_bucket: str = ""
+    etf_s3_prefix: str = "kb/etf/"
+    etf_s3_sync_delete: bool = True
+    etf_sync_scheduler_enabled: bool = True
+    etf_sync_hour_kst: int = 18
+    etf_sync_minute_kst: int = 0
 
     # KRX Open API — ETF 일별매매정보
-    # https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES003_S2.cmd?BO_ID=nrEpCLaZpoLCTzPUMxuF
     krx_auth_key: str = ""
     krx_base_url: str = "https://data-dbg.krx.co.kr/svc/apis"
 

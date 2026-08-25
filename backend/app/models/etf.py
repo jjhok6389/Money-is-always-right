@@ -64,3 +64,5 @@ class EtfSyncResponse(BaseModel):
     asOfDate: str
     message: str
     kbDir: Optional[str] = None
+    s3: Optional[dict] = None
+    ingestion: Optional[dict] = None

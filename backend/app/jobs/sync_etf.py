@@ -98,17 +98,35 @@ def _write_kb_markdown(metrics: dict[str, dict[str, Any]], source: str) -> None:
         _KB_DIR.joinpath(f"10_{symbol}.md").write_text(text, encoding="utf-8")
 
 
-async def sync_etf() -> dict[str, Any]:
+async def sync_etf(*, publish: bool = True) -> dict[str, Any]:
+    """
+    KRX (or mock) → Firestore ledger → kb/etf markdown.
+    When publish=True, also upload to S3 and start Bedrock KB ingestion if configured.
+    """
     series_list, source, message = await krx_etf_client.fetch_krx_universe()
     metrics = etf_store.save_snapshot(series_list, source)
     _write_kb_markdown(metrics, source)
-    return {
+    result: dict[str, Any] = {
         "source": source,
         "count": len(metrics),
         "asOfDate": etf_store.date_today_iso(),
         "message": message or "ETF 원장을 갱신했습니다.",
         "kbDir": str(_KB_DIR),
     }
+    if publish:
+        from app.services import etf_publish
+
+        try:
+            result["s3"] = etf_publish.upload_kb_dir_to_s3(_KB_DIR)
+        except Exception as exc:
+            result["s3"] = {"skipped": False, "error": str(exc)}
+        try:
+            # Only ingest when S3 upload ran (or was not required skipped for missing bucket
+            # but still want ingest if files already on S3 — start if data source configured).
+            result["ingestion"] = etf_publish.start_kb_ingestion()
+        except Exception as exc:
+            result["ingestion"] = {"skipped": False, "error": str(exc)}
+    return result
 
 
 def main() -> None:
