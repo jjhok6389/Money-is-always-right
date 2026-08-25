@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { sendCoachMessage } from '../services/coachService';
 
@@ -7,6 +8,7 @@ const WELCOME =
 
 export default function FloatingCoachChat() {
   const { user, profile, isOnboarded } = useAuth();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([{ role: 'assistant', content: WELCOME }]);
@@ -19,13 +21,17 @@ export default function FloatingCoachChat() {
   const [source, setSource] = useState(null);
   const listRef = useRef(null);
 
+  const hideOnReport =
+    location.pathname.startsWith('/coach-report') ||
+    location.pathname.startsWith('/reports/play');
+
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
   }, [messages, open]);
 
-  if (!user || !isOnboarded) {
+  if (!user || !isOnboarded || hideOnReport) {
     return null;
   }
 
