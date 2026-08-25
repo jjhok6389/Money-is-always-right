@@ -6,7 +6,11 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import OnboardingPage from './pages/OnboardingPage';
 import ProductsPage from './pages/ProductsPage';
+import CoachReportPlayPage from './pages/CoachReportPlayPage';
+import CoachReportStartPage from './pages/CoachReportStartPage';
 import DashboardPage from './pages/DashboardPage';
+import ReportsPage from './pages/ReportsPage';
+import MyPage from './pages/MyPage';
 import SignupPage from './pages/SignupPage';
 import SimulationPage from './pages/SimulationPage';
 import TransactionsPage from './pages/TransactionsPage';
@@ -67,6 +71,10 @@ export default function App() {
         <Route path="/simulation" element={<SimulationPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/products" element={<ProductsPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/mypage" element={<MyPage />} />
+        <Route path="/coach-report" element={<CoachReportStartPage />} />
+        <Route path="/reports/play/:reportId" element={<CoachReportPlayPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -127,6 +127,12 @@ export default function OnboardingPage() {
 
   const onSubmit = async (event) => {
     event.preventDefault();
+    // 1·2단계에서 Enter / 다음 버튼 연속 클릭으로 submit 되는 것 방지
+    if (step !== 3) {
+      goNext();
+      return;
+    }
+
     const message = validateStep();
     if (message) {
       setError(message);
@@ -328,7 +334,12 @@ export default function OnboardingPage() {
                 다음
               </button>
             ) : (
-              <button type="submit" className="btn btn-primary" disabled={submitting}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={submitting}
+                onClick={onSubmit}
+              >
                 {submitting ? '저장 중...' : '프로필 저장하고 시작하기'}
               </button>
             )}

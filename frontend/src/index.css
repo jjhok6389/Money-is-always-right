@@ -76,12 +76,61 @@ textarea {
 .header-nav {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
+.nav-link {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.nav-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(213, 224, 219, 0.95);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 1px 2px rgba(20, 35, 31, 0.06);
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 550;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.nav-chip:hover {
+  background: #fff;
+  border-color: rgba(15, 118, 110, 0.28);
+  box-shadow: 0 4px 12px rgba(20, 35, 31, 0.08);
+  color: var(--accent-strong);
+}
+
+.nav-chip.is-active {
+  background: rgba(15, 118, 110, 0.1);
+  border-color: rgba(15, 118, 110, 0.35);
+  color: var(--accent-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 2px rgba(20, 35, 31, 0.05);
+}
+
+.nav-chip-user {
+  max-width: 9.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 650;
 }
 
 .header-user {
   color: var(--muted);
   font-size: 0.92rem;
+}
+
+.mypage-hint {
+  margin-top: 0.85rem;
+  font-size: 0.88rem;
 }
 
 .auth-shell,
@@ -898,5 +947,292 @@ th {
 @media (max-width: 640px) {
   .etf-detail-stats {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Coaching report player */
+.page-content-report {
+  width: min(640px, calc(100% - 2rem));
+}
+
+.report-shell .app-header {
+  opacity: 0.92;
+}
+
+.report-loading,
+.report-player {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.report-loading-pulse {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 200% 100%;
+  animation: report-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes report-pulse {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.report-progress {
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.report-progress-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.report-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.report-scene-head h1 {
+  margin: 0.2rem 0 0.4rem;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(1.45rem, 3vw, 1.9rem);
+  letter-spacing: -0.03em;
+}
+
+.report-scene-body {
+  min-height: 220px;
+}
+
+.report-stats {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+}
+
+.report-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.report-stat dt {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.report-stat dd {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-gap-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.report-gap-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.6s ease;
+}
+
+.report-gap-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.55rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.report-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.report-bars li {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr 4.2rem;
+  gap: 0.55rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.report-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.report-bar-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent-strong);
+}
+
+.report-bars.is-animate .report-bar-fill {
+  animation: report-bar-grow 0.7s ease forwards;
+}
+
+@keyframes report-bar-grow {
+  from { transform: scaleX(0); transform-origin: left; }
+  to { transform: scaleX(1); transform-origin: left; }
+}
+
+.report-bar-amt {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-insight {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.report-sim-heads {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.92rem;
+}
+
+.report-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.report-line {
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.report-line.baseline {
+  stroke: #8aa39b;
+}
+
+.report-line.scenario {
+  stroke: var(--accent);
+}
+
+.report-chart.is-animate .report-line {
+  stroke-dasharray: 800;
+  stroke-dashoffset: 800;
+  animation: report-draw 1.1s ease forwards;
+}
+
+.report-chart.is-animate .report-line.scenario {
+  animation-delay: 0.15s;
+}
+
+@keyframes report-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.report-target {
+  stroke: rgba(180, 140, 70, 0.55);
+  stroke-dasharray: 4 4;
+  stroke-width: 1.5;
+}
+
+.report-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.55rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.report-strategy-hero {
+  font-size: 1.1rem;
+}
+
+.report-alloc {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.report-alloc li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.report-why {
+  margin: 0.75rem 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.report-done {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.report-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.report-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.report-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.report-compare-text {
+  margin: 0 0 1rem;
+  font-size: 1.02rem;
+}
+
+@media (max-width: 640px) {
+  .report-bars li {
+    grid-template-columns: 3.5rem 1fr 3.6rem;
+    font-size: 0.82rem;
+  }
+
+  .header-nav .nav-chip {
+    font-size: 0.8rem;
+    padding: 0.38rem 0.6rem;
   }
 }
