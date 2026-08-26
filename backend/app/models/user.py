@@ -30,6 +30,9 @@ class UserProfileUpdate(BaseModel):
     targetAssetAmount: int = Field(ge=0)
     targetYears: int = Field(ge=1, le=40)
     goalDescription: str = Field(min_length=1)
+    # 대시보드 자산/부채 오버라이드. currentAssets 비우면 저축 여력 기반 자동 추정.
+    currentAssets: Optional[int] = Field(default=None, ge=0)
+    debtBalance: Optional[int] = Field(default=None, ge=0)
     onboardingCompleted: bool = True
     createdAt: Optional[str] = None
 
