@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" width="100%" role="img" aria-label="청년가구 순자산 상위 20퍼센트와 하위 20퍼센트의 격차">
+  <style>
+    .ko { font-family: 'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif; }
+    .title { font-size: 26px; font-weight: 700; fill: #1E3A5F; }
+    .axis { font-size: 16px; fill: #444C56; }
+    .sub { font-size: 14px; fill: #6B7684; }
+    .value { font-size: 24px; font-weight: 700; fill: #1E3A5F; }
+    .value-hi { font-size: 24px; font-weight: 700; fill: #C4501F; }
+    .cap { font-size: 14px; fill: #6B7684; }
+    .lead { font-size: 19px; font-weight: 700; fill: #1E3A5F; }
+    .leadsub { font-size: 15px; fill: #444C56; }
+  </style>
+
+  <rect x="0" y="0" width="1200" height="440" fill="#FFFFFF"/>
+
+  <text class="ko title" x="40" y="46">청년가구 순자산 격차 — 상위 20% vs 하위 20%</text>
+  <text class="ko sub" x="40" y="72">단위: 만 원 · 막대 높이는 실제 금액 비율 그대로 표현</text>
+
+  <!-- plot area baseline -->
+  <line x1="70" y1="352" x2="700" y2="352" stroke="#C7CFD8" stroke-width="2"/>
+
+  <!-- 상위 20%: 93,022만 -> 240px  /  하위 20%: 2,301만 -> 240*0.02474 = 5.9px -->
+  <rect x="150" y="112" width="130" height="240" rx="4" fill="#2E7DD1"/>
+  <text class="ko value" x="215" y="100" text-anchor="middle">93,022</text>
+  <text class="ko axis" x="215" y="378" text-anchor="middle">상위 20%</text>
+  <text class="ko sub" x="215" y="400" text-anchor="middle">9억 3,022만 원</text>
+
+  <rect x="460" y="346" width="130" height="6" rx="2" fill="#E8734A"/>
+  <text class="ko value-hi" x="525" y="332" text-anchor="middle">2,301</text>
+  <text class="ko axis" x="525" y="378" text-anchor="middle">하위 20%</text>
+  <text class="ko sub" x="525" y="400" text-anchor="middle">2,301만 원</text>
+
+  <!-- gap bracket -->
+  <line x1="310" y1="112" x2="310" y2="346" stroke="#E8734A" stroke-width="2"/>
+  <line x1="300" y1="112" x2="320" y2="112" stroke="#E8734A" stroke-width="2"/>
+  <line x1="300" y1="346" x2="320" y2="346" stroke="#E8734A" stroke-width="2"/>
+  <rect x="330" y="206" width="104" height="46" rx="23" fill="#E8734A"/>
+  <text class="ko" x="382" y="237" text-anchor="middle" font-size="24" font-weight="700" fill="#FFFFFF">40.4배</text>
+
+  <!-- right message panel -->
+  <rect x="760" y="96" width="400" height="256" rx="12" fill="#F2F5F9"/>
+  <rect x="760" y="96" width="6" height="256" rx="3" fill="#2E7DD1"/>
+  <text class="ko lead" x="794" y="140">평균값만으로는 드러나지 않는</text>
+  <text class="ko lead" x="794" y="168">청년 내부의 자산 격차</text>
+  <text class="ko leadsub" x="794" y="208">· 동일한 &#39;청년&#39; 집단 안에서도 자산 여건이</text>
+  <text class="ko leadsub" x="810" y="232">상·하위 간 40배 이상 벌어짐</text>
+  <text class="ko leadsub" x="794" y="264">· 일괄적인 상품 추천이 아니라</text>
+  <text class="ko leadsub" x="810" y="288">개인별 재무상태 진단이 필요한 이유</text>
+  <text class="ko leadsub" x="794" y="320">· 저축 여력이 부족한 청년일수록</text>
+  <text class="ko leadsub" x="810" y="344">기존 자산형성 지원의 사각지대에 놓임</text>
+
+  <!-- caption -->
+  <text class="ko cap" x="40" y="428">자료: 국회입법조사처, 가계금융복지조사 마이크로데이터 분석 (청년가구 순자산 5분위 평균)</text>
+</svg>
