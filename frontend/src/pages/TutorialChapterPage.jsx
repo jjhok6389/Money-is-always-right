@@ -5,11 +5,11 @@ import TutorialInteraction from '../components/TutorialInteraction';
 import TutorialRewardDialog from '../components/TutorialRewardDialog';
 import { getTutorialChapter, MIDPOINT_REWARDS, TUTORIAL_CHAPTERS } from '../data/tutorialChapters';
 import useTutorialProgress from '../hooks/useTutorialProgress';
-import { useAuth } from '../contexts/AuthContext';
+import useFinancialSummary from '../hooks/useFinancialSummary';
 
 const STEP_LABELS = ['개념', '사례', '체험', '퀴즈', '완료'];
 
-function ChapterExperience({ chapter, profile, progressState }) {
+function ChapterExperience({ chapter, financialSummary, progressState }) {
   const { progress, saving, error, completeChapter, claimMidpoint } = progressState;
   const [step, setStep] = useState(0);
   const [interactionDone, setInteractionDone] = useState(false);
@@ -72,7 +72,7 @@ function ChapterExperience({ chapter, profile, progressState }) {
       );
     }
     if (step === 2) {
-      return <TutorialInteraction chapterId={chapter.id} profile={profile} onComplete={() => setInteractionDone(true)} />;
+      return <TutorialInteraction chapterId={chapter.id} financialSummary={financialSummary} onComplete={() => setInteractionDone(true)} />;
     }
     if (step === 3) {
       return (
@@ -153,8 +153,8 @@ function ChapterExperience({ chapter, profile, progressState }) {
 export default function TutorialChapterPage() {
   const { chapterId } = useParams();
   const chapter = getTutorialChapter(chapterId);
-  const { profile } = useAuth();
   const progressState = useTutorialProgress();
+  const financeState = useFinancialSummary();
 
   if (!chapter) return <Navigate to="/tutorial" replace />;
 
@@ -173,7 +173,7 @@ export default function TutorialChapterPage() {
           <p className="lead">{chapter.summary}</p>
         </header>
 
-        {progressState.loading && <p className="muted">진행 상태를 불러오는 중...</p>}
+        {(progressState.loading || financeState.loading) && <p className="muted">진행 상태와 Demo 금융 데이터를 불러오는 중...</p>}
         {progressState.error && !progressState.progress && (
           <div className="tutorial-load-error alert alert-error">
             <p>{progressState.error}</p>
@@ -182,14 +182,29 @@ export default function TutorialChapterPage() {
             </button>
           </div>
         )}
-        {!progressState.loading && locked && (
+        {financeState.error && !financeState.financialSummary && (
+          <div className="tutorial-load-error alert alert-error">
+            <p>{financeState.error}</p>
+            <button type="button" className="btn btn-secondary" onClick={financeState.refresh}>
+              다시 불러오기
+            </button>
+          </div>
+        )}
+        {!progressState.loading && !financeState.loading && locked && (
           <section className="tutorial-locked-panel">
             <h2>이전 챕터를 먼저 완료해주세요</h2>
             <p>{previousChapter.title}을 완료하면 이 챕터가 열립니다.</p>
             <Link to={`/tutorial/${previousChapter.id}`} className="btn btn-primary">이전 챕터로</Link>
           </section>
         )}
-        {!progressState.loading && !locked && progressState.progress && <ChapterExperience key={chapter.id} chapter={chapter} profile={profile} progressState={progressState} />}
+        {!progressState.loading && !financeState.loading && !locked && progressState.progress && financeState.financialSummary && (
+          <ChapterExperience
+            key={`${chapter.id}-${financeState.financialSummary.month}`}
+            chapter={chapter}
+            financialSummary={financeState.financialSummary}
+            progressState={progressState}
+          />
+        )}
       </main>
     </div>
   );

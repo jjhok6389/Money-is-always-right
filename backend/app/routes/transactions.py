@@ -14,7 +14,7 @@ router = APIRouter()
 @router.get("/pipeline", response_model=TransactionPipelineResult)
 def get_transaction_pipeline(
     month: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}$"),
-    count: int = Query(default=40, ge=10, le=120),
+    count: int = Query(default=transaction_pipeline.DEFAULT_TRANSACTION_COUNT, ge=10, le=120),
     current_user: dict = Depends(get_current_user),
 ):
     """Generate, classify, and summarize mocked transactions for the signed-in user."""

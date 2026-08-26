@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_current_user
 from app.models.simulation import ProfileSimulationRequest, SimulationRequest, SimulationResponse
-from app.services import firebase_service, simulation_service
+from app.services import firebase_service, simulation_service, transaction_pipeline
 
 router = APIRouter()
 
@@ -36,7 +36,15 @@ def run_from_profile(
             detail="온보딩 프로필이 필요합니다.",
         )
 
-    baseline = simulation_service.assumptions_from_profile(profile, payload.currentAssets)
+    pipeline = transaction_pipeline.run_pipeline(
+        user_id=uid,
+        count=transaction_pipeline.DEFAULT_TRANSACTION_COUNT,
+    )
+    baseline = simulation_service.assumptions_from_financial_summary(
+        pipeline.financialSummary,
+        profile,
+        payload.currentAssets,
+    )
     scenario = baseline.model_copy(update=payload.scenario)
     request = SimulationRequest(
         baseline=baseline,

@@ -154,7 +154,12 @@ def _scenario_updates(params: dict[str, Any], baseline) -> dict[str, Any]:
 
 
 async def _run_scenario_simulation(params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
-    baseline = simulation_service.assumptions_from_profile(ctx.profile)
+    dashboard = await ctx.dashboard()
+    baseline = simulation_service.assumptions_from_financial_summary(
+        dashboard.financialSummary,
+        ctx.profile,
+        dashboard.goal.currentAssets,
+    )
     updates = _scenario_updates(params, baseline)
     scenario = baseline.model_copy(update=updates) if updates else baseline
 

@@ -43,6 +43,9 @@ export default function TransactionsPage() {
     if (filter === 'income') {
       return data.transactions.filter((tx) => tx.isIncome);
     }
+    if (filter === 'savings') {
+      return data.transactions.filter((tx) => tx.expenseType === 'savings');
+    }
     return data.transactions;
   }, [data, filter]);
 
@@ -53,7 +56,6 @@ export default function TransactionsPage() {
       const result = await regenerateTransactionPipeline({
         month,
         count: 45,
-        seed: Date.now() % 100000,
       });
       setData(result);
     } catch (err) {
@@ -71,7 +73,7 @@ export default function TransactionsPage() {
           <p className="eyebrow">Phase 2 · 데이터 관리</p>
           <h1>소비 거래 분류</h1>
           <p className="lead">
-            더미 거래 데이터를 생성하고 소비 카테고리·고정/변동비로 자동 분류합니다.
+            Demo 거래를 생성하고 소득·생활비·변동 소비·저축 이체로 자동 분류합니다.
           </p>
         </section>
 
@@ -88,7 +90,7 @@ export default function TransactionsPage() {
             불러오기
           </button>
           <button type="button" className="btn btn-primary" onClick={onRegenerate} disabled={loading}>
-            더미 데이터 재생성
+            Demo 데이터 새로고침
           </button>
         </div>
 
@@ -99,22 +101,23 @@ export default function TransactionsPage() {
           <>
             <section className="stat-row">
               <article>
-                <h3>소득</h3>
-                <p>{Number(data.totals.income).toLocaleString('ko-KR')}원</p>
+                <h3>총소득</h3>
+                <p>{Number(data.financialSummary.totalIncome).toLocaleString('ko-KR')}원</p>
               </article>
               <article>
-                <h3>고정비</h3>
-                <p>{Number(data.totals.fixedExpenses).toLocaleString('ko-KR')}원</p>
+                <h3>고정 생활비</h3>
+                <p>{Number(data.financialSummary.fixedLivingExpenses).toLocaleString('ko-KR')}원</p>
               </article>
               <article>
-                <h3>변동비</h3>
-                <p>{Number(data.totals.variableExpenses).toLocaleString('ko-KR')}원</p>
+                <h3>저축·투자 이체</h3>
+                <p>{Number(data.financialSummary.savingsAndInvestments).toLocaleString('ko-KR')}원</p>
               </article>
               <article>
                 <h3>순현금흐름</h3>
-                <p>{Number(data.totals.netCashflow).toLocaleString('ko-KR')}원</p>
+                <p>{Number(data.financialSummary.netCashflow).toLocaleString('ko-KR')}원</p>
               </article>
             </section>
+            <p className="source-banner mock">생성된 월간 Demo 금융 데이터 · 급여 1회와 선택적 추가 소득을 분리 집계합니다.</p>
 
             <section className="panel">
               <h2>카테고리 요약</h2>
@@ -124,7 +127,7 @@ export default function TransactionsPage() {
                     <strong>{item.categoryLabel}</strong>
                     <span>{Number(item.totalAmount).toLocaleString('ko-KR')}원</span>
                     <small>
-                      {item.count}건 · {item.expenseType === 'fixed' ? '고정비' : '변동비'}
+                      {item.count}건 · {item.expenseType === 'fixed' ? '고정 생활비' : item.expenseType === 'savings' ? '저축·투자' : '변동 소비'}
                     </small>
                   </div>
                 ))}
@@ -138,8 +141,9 @@ export default function TransactionsPage() {
                   {[
                     ['all', '전체'],
                     ['income', '소득'],
-                    ['fixed', '고정비'],
-                    ['variable', '변동비'],
+                    ['fixed', '고정 생활비'],
+                    ['variable', '변동 소비'],
+                    ['savings', '저축·투자'],
                   ].map(([value, label]) => (
                     <button
                       key={value}

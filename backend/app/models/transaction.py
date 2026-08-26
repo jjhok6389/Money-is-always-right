@@ -6,12 +6,19 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-ExpenseType = Literal["fixed", "variable"]
+ExpenseType = Literal["income", "fixed", "variable", "savings"]
 CategoryCode = Literal[
+    "salary",
+    "side_income",
+    "bonus",
+    "refund",
     "food",
     "transport",
     "housing",
     "telecom",
+    "insurance",
+    "debt",
+    "subscription",
     "shopping",
     "leisure",
     "medical",
@@ -43,12 +50,30 @@ class CategorySummary(BaseModel):
     expenseType: ExpenseType
 
 
+class FinancialSummary(BaseModel):
+    """Single monthly source of truth derived from generated transactions."""
+
+    month: str
+    salaryIncome: int = Field(ge=0)
+    additionalIncome: int = Field(ge=0)
+    totalIncome: int = Field(ge=0)
+    fixedLivingExpenses: int = Field(ge=0)
+    variableExpenses: int = Field(ge=0)
+    savingsAndInvestments: int = Field(ge=0)
+    totalExpenses: int = Field(ge=0)
+    cashOutflows: int = Field(ge=0)
+    netCashflow: int
+    monthlySavingsCapacity: int = Field(ge=0)
+    source: Literal["mock"] = "mock"
+
+
 class TransactionPipelineResult(BaseModel):
     userId: str
     generatedAt: str
     month: str
     transactions: list[Transaction]
     categorySummaries: list[CategorySummary]
+    financialSummary: FinancialSummary
     totals: dict
 
 
@@ -57,5 +82,5 @@ class TransactionGenerateRequest(BaseModel):
         default=None,
         description="YYYY-MM. Defaults to current month.",
     )
-    count: int = Field(default=40, ge=10, le=120)
+    count: int = Field(default=45, ge=10, le=120)
     seed: Optional[int] = None

@@ -63,11 +63,10 @@ function SalaryInteraction({ onComplete }) {
   );
 }
 
-function CashflowInteraction({ profile, onComplete }) {
-  const income = profileAmount(profile?.monthlyIncome, 3000000);
-  const fixed = profileAmount(profile?.fixedExpenses, 1500000);
-  const remainingAfterFixed = Math.max(income - fixed, 0);
-  const initialVariable = Math.round((remainingAfterFixed * 0.7) / 10000) * 10000;
+function CashflowInteraction({ financialSummary, onComplete }) {
+  const income = profileAmount(financialSummary?.totalIncome, 3000000);
+  const fixed = profileAmount(financialSummary?.fixedLivingExpenses, 1500000);
+  const initialVariable = profileAmount(financialSummary?.variableExpenses, 800000);
   const [variable, setVariable] = useState(initialVariable);
   const [reduction, setReduction] = useState(Math.min(50000, initialVariable));
   const metrics = calculateCashflowMetrics(income, fixed, variable, reduction);
@@ -112,7 +111,7 @@ function CashflowInteraction({ profile, onComplete }) {
         <div className={metrics.adjustedBalance < 0 ? 'is-risk' : 'is-highlight'}><dt>조정 후 월 현금흐름</dt><dd>{formatCashflow(metrics.adjustedBalance)}</dd></div>
         <div><dt>조정 후 잉여·부족 비율</dt><dd>{formatPercent(metrics.adjustedBalanceRate)}</dd></div>
       </dl>
-      <p className="tutorial-data-note">프로필의 월 소득을 세후 가용소득으로 가정한 교육용 계산입니다. 변동지출 초기값은 고정비 차감 후 금액의 70%로 둔 예시이므로 직접 조정해야 하며, 음수인 월 부족액도 그대로 표시합니다. 장기 절감액은 이자 없이 단순 합산했습니다.</p>
+      <p className="tutorial-data-note">소득·고정 생활비·변동 소비의 초기값은 같은 달에 생성된 Demo 금융 거래 기준입니다. 사용자가 변동 소비를 직접 조정할 수 있고 음수인 월 부족액도 그대로 표시합니다. 장기 절감액은 이자 없이 단순 합산했습니다.</p>
     </div>
   );
 }
@@ -274,10 +273,10 @@ function SafetyInteraction({ onComplete }) {
   );
 }
 
-export default function TutorialInteraction({ chapterId, profile, onComplete }) {
+export default function TutorialInteraction({ chapterId, financialSummary, onComplete }) {
   if (chapterId === 'salary') return <SalaryInteraction onComplete={onComplete} />;
-  if (chapterId === 'cashflow') return <CashflowInteraction profile={profile} onComplete={onComplete} />;
-  if (chapterId === 'savings') return <SavingsInteraction profile={profile} onComplete={onComplete} />;
+  if (chapterId === 'cashflow') return <CashflowInteraction financialSummary={financialSummary} onComplete={onComplete} />;
+  if (chapterId === 'savings') return <SavingsInteraction onComplete={onComplete} />;
   if (chapterId === 'investment-risk') return <RiskInteraction onComplete={onComplete} />;
   if (chapterId === 'etf-diversification') return <DiversificationInteraction onComplete={onComplete} />;
   return <SafetyInteraction onComplete={onComplete} />;

@@ -66,9 +66,6 @@ export default function DashboardPage() {
       const payload = {
         profile: {
           displayName: profile.displayName,
-          monthlyIncome: Number(profile.monthlyIncome) || 0,
-          fixedExpenses: Number(profile.fixedExpenses) || 0,
-          estimatedMonthlySavings: Number(profile.estimatedMonthlySavings) || 0,
           investmentPropensity: propensity,
           targetAssetAmount: Number(profile.targetAssetAmount) || 0,
           targetYears: Number(profile.targetYears) || 1,
@@ -203,7 +200,7 @@ export default function DashboardPage() {
               <section className="panel chart-panel">
                 <h2>월간 소비 분석 ({data.month})</h2>
                 <p className="muted">
-                  총 지출 {Number(data.consumptionTotals.totalExpenses || 0).toLocaleString('ko-KR')}원
+                  생성된 Demo 거래 기준 · 총 생활비 {Number(data.financialSummary?.totalExpenses || 0).toLocaleString('ko-KR')}원
                 </p>
                 <ConsumptionBarChart data={data.consumption} />
               </section>

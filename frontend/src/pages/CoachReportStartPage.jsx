@@ -14,9 +14,6 @@ function buildProfilePayload(profile) {
   if (!profile) return undefined;
   return {
     displayName: profile.displayName,
-    monthlyIncome: Number(profile.monthlyIncome) || 0,
-    fixedExpenses: Number(profile.fixedExpenses) || 0,
-    estimatedMonthlySavings: Number(profile.estimatedMonthlySavings) || 0,
     investmentPropensity: profile.investmentPropensity || 'neutral',
     targetAssetAmount: Number(profile.targetAssetAmount) || 0,
     targetYears: Number(profile.targetYears) || 1,

@@ -8,13 +8,15 @@ from pydantic import BaseModel, Field
 
 from app.models.user import InvestmentPropensity
 from app.models.etf import EtfSummary
+from app.models.transaction import FinancialSummary
 
 
 class ProfileSnapshot(BaseModel):
     displayName: Optional[str] = None
-    monthlyIncome: int = Field(ge=0)
-    fixedExpenses: int = Field(ge=0)
-    estimatedMonthlySavings: int = Field(ge=0)
+    # Legacy fields remain accepted, but analytics use generated FinancialSummary.
+    monthlyIncome: int = Field(default=0, ge=0)
+    fixedExpenses: int = Field(default=0, ge=0)
+    estimatedMonthlySavings: int = Field(default=0, ge=0)
     investmentPropensity: InvestmentPropensity = "neutral"
     targetAssetAmount: int = Field(ge=0)
     targetYears: int = Field(ge=1, le=40)
@@ -80,6 +82,7 @@ class DashboardResponse(BaseModel):
     portfolio: list[PortfolioSlice]
     consumption: list[ConsumptionBar]
     consumptionTotals: dict
+    financialSummary: FinancialSummary
     goal: GoalProgress
     roadmap: list[RoadmapItem]
     recommendedProducts: list[RecommendedProduct]

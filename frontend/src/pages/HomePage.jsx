@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import { useAuth } from '../contexts/AuthContext';
+import useFinancialSummary from '../hooks/useFinancialSummary';
 import { listReports } from '../services/reportService';
 
 const PROPENSITY_LABELS = {
@@ -12,12 +13,18 @@ const PROPENSITY_LABELS = {
   very_aggressive: '공격투자형',
 };
 
+function formatFinancialValue(value, loading, error) {
+  if (loading) return '불러오는 중';
+  if (error) return '조회 실패';
+  return `${Number(value || 0).toLocaleString('ko-KR')}원`;
+}
+
 export default function HomePage() {
   const { profile } = useAuth();
+  const { financialSummary, loading: financialLoading, error: financialError } = useFinancialSummary();
   const [latestReportId, setLatestReportId] = useState(null);
   const ready =
     Boolean(profile?.onboardingCompleted) &&
-    Number(profile?.monthlyIncome) >= 0 &&
     Number(profile?.targetAssetAmount) > 0;
 
   useEffect(() => {
@@ -74,6 +81,7 @@ export default function HomePage() {
 
         <section className="profile-summary">
           <h2>내 프로필 요약</h2>
+          <p className="muted">소득·지출은 실제 금융기관 연동 전 생성된 월간 Demo 거래 기준입니다.</p>
           <dl className="summary-grid">
             <div>
               <dt>나이 / 직업</dt>
@@ -83,17 +91,15 @@ export default function HomePage() {
             </div>
             <div>
               <dt>월 소득</dt>
-              <dd>{Number(profile?.monthlyIncome || 0).toLocaleString('ko-KR')}원</dd>
+              <dd>{formatFinancialValue(financialSummary?.totalIncome, financialLoading, financialError)}</dd>
             </div>
             <div>
-              <dt>고정 지출</dt>
-              <dd>{Number(profile?.fixedExpenses || 0).toLocaleString('ko-KR')}원</dd>
+              <dt>고정 생활비</dt>
+              <dd>{formatFinancialValue(financialSummary?.fixedLivingExpenses, financialLoading, financialError)}</dd>
             </div>
             <div>
-              <dt>예상 월 저축</dt>
-              <dd>
-                {Number(profile?.estimatedMonthlySavings || 0).toLocaleString('ko-KR')}원
-              </dd>
+              <dt>월 저축 여력</dt>
+              <dd>{formatFinancialValue(financialSummary?.monthlySavingsCapacity, financialLoading, financialError)}</dd>
             </div>
             <div>
               <dt>투자 성향</dt>
