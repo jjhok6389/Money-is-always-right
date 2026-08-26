@@ -180,7 +180,10 @@ export default function DashboardPage() {
                 <p className="muted">
                   생성된 Demo 거래 기준 · 총 생활비 {Number(data.financialSummary?.totalExpenses || 0).toLocaleString('ko-KR')}원
                 </p>
-                <ConsumptionBarChart data={data.consumption} />
+                <ConsumptionBarChart
+                  data={data.consumption}
+                  totalExpenses={data.financialSummary?.totalExpenses || 0}
+                />
               </section>
             </div>
 

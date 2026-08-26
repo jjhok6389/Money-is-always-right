@@ -2238,6 +2238,26 @@ th {
   font-variant-numeric: tabular-nums;
 }
 
+.consumption-tooltip {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.consumption-tooltip p {
+  margin: 0;
+}
+
+.consumption-tooltip-title {
+  margin-bottom: 0.2rem !important;
+  font-weight: 700;
+}
+
 /* Financial basics tutorial */
 .tutorial-widget {
   display: grid;
