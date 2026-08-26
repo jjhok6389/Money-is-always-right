@@ -3,6 +3,7 @@ import AppHeader from '../components/AppHeader';
 import ConsumptionBarChart from '../components/ConsumptionBarChart';
 import EtfVolatilityChart from '../components/EtfVolatilityChart';
 import PortfolioDonut from '../components/PortfolioDonut';
+import TutorialProgressPanel from '../components/TutorialProgressPanel';
 import { useAuth } from '../contexts/AuthContext';
 import { computeDashboard } from '../services/dashboardService';
 import { fetchEtfDetail } from '../services/etfService';
@@ -158,6 +159,8 @@ export default function DashboardPage() {
 
         {error && <p className="alert alert-error" role="alert">{error}</p>}
         {loading && !data && <p className="muted">대시보드를 생성하는 중...</p>}
+
+        <TutorialProgressPanel />
 
         {data && (
           <>

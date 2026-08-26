@@ -14,6 +14,8 @@ import MyPage from './pages/MyPage';
 import SignupPage from './pages/SignupPage';
 import SimulationPage from './pages/SimulationPage';
 import TransactionsPage from './pages/TransactionsPage';
+import TutorialChapterPage from './pages/TutorialChapterPage';
+import TutorialPage from './pages/TutorialPage';
 
 function PublicOnly({ children }) {
   const { user, loading, isOnboarded } = useAuth();
@@ -73,6 +75,8 @@ export default function App() {
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/mypage" element={<MyPage />} />
+        <Route path="/tutorial" element={<TutorialPage />} />
+        <Route path="/tutorial/:chapterId" element={<TutorialChapterPage />} />
         <Route path="/coach-report" element={<CoachReportStartPage />} />
         <Route path="/reports/play/:reportId" element={<CoachReportPlayPage />} />
       </Route>

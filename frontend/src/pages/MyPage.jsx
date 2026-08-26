@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
+import TutorialProgressPanel from '../components/TutorialProgressPanel';
 import { useAuth } from '../contexts/AuthContext';
 
 const PROPENSITY_LABELS = {
@@ -30,6 +31,8 @@ export default function MyPage() {
             </Link>
           </div>
         </section>
+
+        <TutorialProgressPanel detailed />
 
         <section className="profile-summary">
           <h2>내 프로필</h2>
