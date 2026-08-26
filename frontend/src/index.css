@@ -2182,6 +2182,62 @@ th {
   }
 }
 
+.hero-panel-with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+
+.hero-panel-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.tutorial-entry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  padding: 0.45rem 0.45rem 0.45rem 0.95rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0f766e 0%, #0b5f59 100%);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(15, 118, 110, 0.28);
+  transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.tutorial-entry-btn:hover {
+  background: linear-gradient(135deg, #12857c 0%, #0f766e 100%);
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.36);
+  transform: translateY(-1px);
+}
+
+.tutorial-entry-btn-label {
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.tutorial-entry-btn-pct {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.6rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Financial basics tutorial */
 .tutorial-widget {
   display: grid;
@@ -2840,6 +2896,15 @@ th {
 }
 
 @media (max-width: 640px) {
+  .hero-panel-with-action {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tutorial-entry-btn {
+    align-self: flex-end;
+  }
+
   .tutorial-widget-head,
   .tutorial-widget-action,
   .tutorial-context-line {

@@ -2,11 +2,27 @@ import { Link } from 'react-router-dom';
 import { TUTORIAL_CHAPTERS } from '../data/tutorialChapters';
 import useTutorialProgress from '../hooks/useTutorialProgress';
 
-export default function TutorialProgressPanel({ detailed = false }) {
+export default function TutorialProgressPanel({ detailed = false, compact = false }) {
   const { progress, loading, error, refresh } = useTutorialProgress();
   const completed = progress?.completedCount || 0;
   const nextChapter = TUTORIAL_CHAPTERS.find((chapter) => !progress?.chapters?.[chapter.id]?.completed);
   const pct = Math.round((completed / TUTORIAL_CHAPTERS.length) * 100);
+  const href = nextChapter ? `/tutorial/${nextChapter.id}` : '/tutorial';
+
+  if (compact) {
+    const label = loading ? '불러오는 중…' : error ? '다시 시도' : `${pct}%`;
+    return (
+      <Link
+        to={error ? '#' : href}
+        className="tutorial-entry-btn"
+        aria-label={error ? '금융기초 튜토리얼 진행 상태를 다시 불러오세요' : `금융기초 튜토리얼, 진행률 ${pct}%`}
+        onClick={error ? (event) => { event.preventDefault(); refresh(); } : undefined}
+      >
+        <span className="tutorial-entry-btn-label">금융기초 튜토리얼</span>
+        <span className="tutorial-entry-btn-pct">{label}</span>
+      </Link>
+    );
+  }
 
   return (
     <section className={`tutorial-widget${detailed ? ' is-detailed' : ''}`} aria-labelledby={detailed ? 'mypage-tutorial-title' : 'dashboard-tutorial-title'}>
@@ -43,7 +59,7 @@ export default function TutorialProgressPanel({ detailed = false }) {
           {!loading && (
             <div className="tutorial-widget-action">
               <p>{nextChapter ? `다음 퀘스트 · ${nextChapter.title}` : '모든 금융기초 퀘스트를 완료했습니다.'}</p>
-              <Link to={nextChapter ? `/tutorial/${nextChapter.id}` : '/tutorial'} className="btn btn-primary">
+              <Link to={href} className="btn btn-primary">
                 {nextChapter ? '이어하기' : '완료 내역 보기'}
               </Link>
             </div>
