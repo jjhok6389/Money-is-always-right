@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import { useAuth } from '../contexts/AuthContext';
+import { saveUserProfile } from '../services/userService';
 
 const PROPENSITY_LABELS = {
   stable: '안정형',
@@ -11,7 +13,45 @@ const PROPENSITY_LABELS = {
 };
 
 export default function MyPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
+  const [currentAssets, setCurrentAssets] = useState('');
+  const [debtBalance, setDebtBalance] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!profile) return;
+    setCurrentAssets(
+      profile.currentAssets != null && profile.currentAssets !== '' ? String(profile.currentAssets) : '',
+    );
+    setDebtBalance(
+      profile.debtBalance != null && profile.debtBalance !== '' ? String(profile.debtBalance) : '',
+    );
+  }, [profile]);
+
+  const onSaveBalances = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setMessage('');
+    setError('');
+    try {
+      // updatedAt은 saveUserProfile이 serverTimestamp로 기록하므로 제외한다.
+      const { updatedAt: _ignored, ...profileRest } = profile || {};
+      await saveUserProfile(user.uid, {
+        ...profileRest,
+        currentAssets: currentAssets === '' ? null : Number(currentAssets),
+        debtBalance: Number(debtBalance) || 0,
+        createdAt: profile?.createdAt || new Date().toISOString(),
+      });
+      await refreshProfile();
+      setMessage('저장했습니다. 대시보드에 바로 반영됩니다.');
+    } catch (err) {
+      setError(err.message || '저장에 실패했습니다.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="page-shell">
@@ -29,6 +69,53 @@ export default function MyPage() {
               리포트 보관함
             </Link>
           </div>
+        </section>
+
+        <section className="profile-summary">
+          <h2>자산 · 부채</h2>
+          <p className="muted">
+            대시보드의 포트폴리오·목표 달성률·부채 상환 계산에 사용됩니다. 현재 자산을 비우면
+            저축 여력 기반으로 자동 추정합니다.
+          </p>
+          <form onSubmit={onSaveBalances} className="form-stack">
+            <label>
+              현재 자산 (원, 선택)
+              <input
+                type="number"
+                min="0"
+                step="100000"
+                value={currentAssets}
+                onChange={(event) => setCurrentAssets(event.target.value)}
+                placeholder="비우면 자동 추정"
+              />
+            </label>
+            <label>
+              부채 잔액 (원)
+              <input
+                type="number"
+                min="0"
+                step="100000"
+                value={debtBalance}
+                onChange={(event) => setDebtBalance(event.target.value)}
+                placeholder="0"
+              />
+            </label>
+            <div className="form-actions">
+              <button type="submit" className="btn btn-primary" disabled={saving}>
+                {saving ? '저장 중...' : '자산·부채 저장'}
+              </button>
+            </div>
+            {message && (
+              <p className="alert alert-success" role="status">
+                {message}
+              </p>
+            )}
+            {error && (
+              <p className="alert alert-error" role="alert">
+                {error}
+              </p>
+            )}
+          </form>
         </section>
 
         <section className="profile-summary">

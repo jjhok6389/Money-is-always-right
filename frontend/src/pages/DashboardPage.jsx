@@ -40,8 +40,6 @@ function etfRiskCopy(etf) {
 export default function DashboardPage() {
   const { profile } = useAuth();
   const [data, setData] = useState(null);
-  const [debtBalance, setDebtBalance] = useState(0);
-  const [currentAssets, setCurrentAssets] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedEtf, setSelectedEtf] = useState(null);
@@ -52,6 +50,7 @@ export default function DashboardPage() {
   const propensity = profile?.investmentPropensity || 'neutral';
   const showEtfSection = propensity !== 'stable';
 
+  // 자산/부채는 마이페이지에서 저장한 프로필 값을 읽어 계산한다.
   const load = async () => {
     if (!profile) {
       setError('온보딩 프로필이 필요합니다.');
@@ -75,10 +74,10 @@ export default function DashboardPage() {
           age: profile.age,
           occupation: profile.occupation,
         },
-        debtBalance: Number(debtBalance) || 0,
+        debtBalance: Number(profile.debtBalance) || 0,
       };
-      if (currentAssets !== '' && currentAssets != null) {
-        payload.currentAssets = Number(currentAssets);
+      if (profile.currentAssets != null && profile.currentAssets !== '') {
+        payload.currentAssets = Number(profile.currentAssets);
       }
       const result = await computeDashboard(payload);
       setData(result);
@@ -113,7 +112,13 @@ export default function DashboardPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.uid, profile?.targetAssetAmount, profile?.investmentPropensity]);
+  }, [
+    profile?.uid,
+    profile?.targetAssetAmount,
+    profile?.investmentPropensity,
+    profile?.currentAssets,
+    profile?.debtBalance,
+  ]);
 
   return (
     <div className="page-shell">
@@ -127,34 +132,6 @@ export default function DashboardPage() {
             바탕으로 실행 로드맵을 제시합니다.
           </p>
         </section>
-
-        <div className="toolbar">
-          <label>
-            현재 자산 (원, 선택)
-            <input
-              type="number"
-              min="0"
-              step="100000"
-              value={currentAssets}
-              onChange={(event) => setCurrentAssets(event.target.value)}
-              placeholder="비우면 자동 추정"
-            />
-          </label>
-          <label>
-            부채 잔액 (원)
-            <input
-              type="number"
-              min="0"
-              step="100000"
-              value={debtBalance}
-              onChange={(event) => setDebtBalance(event.target.value)}
-              placeholder="0"
-            />
-          </label>
-          <button type="button" className="btn btn-primary" onClick={load} disabled={loading}>
-            {loading ? '계산 중...' : '다시 계산'}
-          </button>
-        </div>
 
         {error && <p className="alert alert-error" role="alert">{error}</p>}
         {loading && !data && <p className="muted">대시보드를 생성하는 중...</p>}
