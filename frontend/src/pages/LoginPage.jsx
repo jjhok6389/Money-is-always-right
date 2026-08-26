@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import AppHeader from '../components/AppHeader';
 import { isFirebaseConfigured } from '../firebase/setupCheck';
 
 function mapAuthError(code) {
@@ -49,9 +48,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-shell">
-      <AppHeader />
+    <div className="auth-shell auth-shell-public">
       <main className="auth-card">
+        <Link to="/" className="brand auth-brand">
+          Money is Always Right
+        </Link>
         <h1>로그인</h1>
         <p className="muted">맞춤형 자산 관리를 시작하려면 로그인해 주세요.</p>
         {!firebaseReady && (

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import AppHeader from '../components/AppHeader';
 
 function mapAuthError(code) {
   const messages = {
@@ -35,9 +34,11 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="auth-shell">
-      <AppHeader />
+    <div className="auth-shell auth-shell-public">
       <main className="auth-card">
+        <Link to="/" className="brand auth-brand">
+          Money is Always Right
+        </Link>
         <h1>비밀번호 찾기</h1>
         <p className="muted">
           가입하신 이메일(아이디)로 재설정 링크를 보내드립니다.

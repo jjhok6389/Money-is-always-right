@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import AppHeader from '../components/AppHeader';
 
 function mapAuthError(code) {
   const messages = {
@@ -54,9 +53,11 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="auth-shell">
-      <AppHeader />
+    <div className="auth-shell auth-shell-public">
       <main className="auth-card">
+        <Link to="/" className="brand auth-brand">
+          Money is Always Right
+        </Link>
         <h1>회원가입</h1>
         <p className="muted">청년 맞춤 자산 관리를 위한 계정을 만들어 보세요.</p>
 
