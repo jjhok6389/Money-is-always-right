@@ -87,13 +87,13 @@ def build_insight(delta: int, top_label: str | None, has_consumption: bool) -> s
     man = max(1, int(round(delta / 10_000)))
     if not has_consumption:
         return (
-            f"연동된 소비 내역이 없어 프로필 고정지출·저축 여력 기준으로 안내합니다. "
-            f"월 {man}만원 정도를 추가 자산형성에 활용하는 시나리오를 분석했습니다."
+            "아직 소비 내역이 충분하지 않아 프로필의 고정지출과 저축 여력을 기준으로 살펴봤어요. "
+            f"이번 달에는 월 {man}만원을 미래의 자산형성에 먼저 배분해보는 건 어떨까요?"
         )
     cat = top_label or "변동 소비"
     return (
-        f"최근 기준으로 {cat} 지출 비중이 눈에 띕니다. "
-        f"월 {man}만원 정도를 추가 자산형성에 활용하는 시나리오를 분석했습니다."
+        f"최근에는 {cat} 지출 비중이 가장 눈에 띄어요. "
+        f"이번 달에는 이 항목에서 월 {man}만원을 자산형성으로 옮겨보는 건 어떨까요?"
     )
 
 
@@ -106,7 +106,7 @@ def allocate(monthly_deposit: int, propensity: str) -> AllocationSplit:
     return AllocationSplit(deposit=deposit_total - etf, etf=etf)
 
 
-def _downsample_trajectory(points: list[Any], max_points: int = 37) -> list[TrajectorySnap]:
+def _downsample_trajectory(points: list[Any], max_points: int = 73) -> list[TrajectorySnap]:
     if len(points) <= max_points:
         return [
             TrajectorySnap(
