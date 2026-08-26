@@ -53,6 +53,175 @@ textarea {
   place-items: center;
 }
 
+/* 데스크톱 좌측 사이드바 내비게이션 */
+.side-nav {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .page-shell,
+  .auth-shell {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  /* 사이드바 레이아웃에서 콘텐츠가 상단에 붙지 않도록 상하 여백 확보.
+     이후 선언된 .auth-card/.page-content margin shorthand에 덮이지 않도록 특이성 상향 */
+  .page-shell .page-content,
+  .auth-shell .auth-card,
+  .report-shell .page-content {
+    margin-top: 2rem;
+    margin-bottom: 4rem;
+  }
+
+  .side-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    position: sticky;
+    top: 0;
+    width: 13.5rem;
+    min-height: 100vh;
+    /* 하단 여백 = 콘텐츠 상단 여백(2rem)에 맞춰 로그아웃 아래 공간 확보 */
+    padding: 1.4rem 0.9rem 2rem;
+    border-right: 1px solid rgba(213, 224, 219, 0.6);
+    background: transparent; /* 페이지 배경 그라데이션과 동일하게 */
+    flex-shrink: 0;
+  }
+
+  .side-nav .brand {
+    font-size: 1rem;
+    line-height: 1.35;
+    padding: 0 0.25rem;
+  }
+
+  .side-nav nav {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    flex: 1;
+  }
+
+  /* .nav-list 의 margin: 0 (뒤에서 선언)에 덮이지 않도록 특이성 상향 */
+  .nav-list.side-nav-secondary {
+    margin-top: auto;
+  }
+
+  .mobile-header {
+    display: none !important; /* .app-header display:flex 가 이후에 선언되어 덮어쓰는 것 방지 */
+  }
+}
+
+.nav-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+}
+
+.side-nav .nav-chip,
+.mobile-header .nav-chip {
+  justify-content: flex-start;
+}
+
+.mobile-header {
+  flex-wrap: nowrap;
+}
+
+.mobile-header .brand,
+.mobile-header-actions {
+  flex-shrink: 0;
+}
+
+.mobile-header .header-nav {
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-start;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mobile-header .header-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-header .nav-list {
+  flex-direction: row;
+  flex-wrap: nowrap;
+}
+
+/* 상단 페이지 메뉴는 일반 텍스트 링크처럼 표시 */
+.mobile-header .nav-chip {
+  padding: 0.4rem 0.5rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.mobile-header .nav-chip svg {
+  display: none;
+}
+
+.mobile-header .nav-chip:hover,
+.mobile-header .nav-chip.is-active {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent-strong);
+}
+
+.mobile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mobile-header .mobile-icon-action {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+}
+
+.mobile-icon-action.is-active {
+  color: var(--accent-strong);
+  background: rgba(15, 118, 110, 0.1);
+}
+
+/* 사이드바: 무테두리 메뉴, 하단 작업은 아이콘과 텍스트를 함께 유지 */
+.side-nav .nav-list {
+  align-items: stretch;
+}
+
+.side-nav .nav-chip,
+.side-nav .btn {
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.88rem;
+  font-weight: 550;
+  justify-content: flex-start;
+  gap: 0.55rem;
+}
+
+.side-nav .nav-chip:hover,
+.side-nav .btn:hover,
+.side-nav .nav-chip.is-active {
+  border-color: transparent;
+  background: rgba(15, 118, 110, 0.08);
+  box-shadow: none;
+}
+
+.side-nav .nav-chip.is-active {
+  color: var(--accent-strong);
+}
+
 .muted {
   color: var(--muted);
 }
@@ -73,6 +242,17 @@ textarea {
   letter-spacing: -0.02em;
 }
 
+.auth-shell-public {
+  display: grid;
+  place-items: start center;
+  padding-top: 2rem;
+}
+
+.auth-brand {
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+
 .header-nav {
   display: flex;
   align-items: center;
@@ -90,6 +270,7 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.45rem;
   padding: 0.45rem 0.75rem;
   border-radius: 10px;
   border: 1px solid rgba(213, 224, 219, 0.95);
@@ -389,6 +570,59 @@ textarea {
 .page-content-xl {
   width: min(960px, calc(100% - 2rem));
 }
+
+.app-layout {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 40%),
+    radial-gradient(circle at bottom right, rgba(180, 140, 70, 0.12), transparent 35%),
+    linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
+}
+
+.app-footer {
+  width: min(960px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.app-footer strong {
+  color: var(--ink);
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1rem;
+}
+
+.app-footer p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.footer-github {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  color: var(--ink);
+}
+
+.footer-github:hover {
+  color: var(--accent-strong);
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.footer-github:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 
 .toolbar {
   display: flex;
@@ -847,6 +1081,19 @@ th {
   padding: 0.7rem 0.8rem;
   border: 1px solid var(--line);
   border-radius: 12px;
+}
+
+@media (min-width: 900px) {
+  .app-footer {
+    width: min(960px, calc(100% - 15.5rem));
+    margin-right: auto;
+    margin-left: calc(13.5rem + max(1rem, (100vw - 13.5rem - 960px) / 2));
+  }
+
+  .public-auth-layout .app-footer {
+    width: min(960px, calc(100% - 2rem));
+    margin: 0 auto;
+  }
 }
 
 @media (max-width: 640px) {
