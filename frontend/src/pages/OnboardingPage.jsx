@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import { useAuth } from '../contexts/AuthContext';
@@ -36,43 +36,32 @@ const INITIAL_FORM = {
   displayName: '',
   age: '',
   occupation: '',
-  monthlyIncome: '',
-  fixedExpenses: '',
   investmentPropensity: 'neutral',
   targetAssetAmount: '',
   targetYears: '',
   goalDescription: '',
 };
 
+function initialForm(profile, user) {
+  return {
+    ...INITIAL_FORM,
+    displayName: profile?.displayName || user?.displayName || '',
+    age: profile?.age?.toString() || '',
+    occupation: profile?.occupation || '',
+    investmentPropensity: profile?.investmentPropensity || 'neutral',
+    targetAssetAmount: profile?.targetAssetAmount?.toString() || '',
+    targetYears: profile?.targetYears?.toString() || '',
+    goalDescription: profile?.goalDescription || '',
+  };
+}
+
 export default function OnboardingPage() {
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(INITIAL_FORM);
+  const [form, setForm] = useState(() => initialForm(profile, user));
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!profile && !user) return;
-    setForm((prev) => ({
-      ...prev,
-      displayName: profile?.displayName || user?.displayName || '',
-      age: profile?.age?.toString() || '',
-      occupation: profile?.occupation || '',
-      monthlyIncome: profile?.monthlyIncome?.toString() || '',
-      fixedExpenses: profile?.fixedExpenses?.toString() || '',
-      investmentPropensity: profile?.investmentPropensity || 'neutral',
-      targetAssetAmount: profile?.targetAssetAmount?.toString() || '',
-      targetYears: profile?.targetYears?.toString() || '',
-      goalDescription: profile?.goalDescription || '',
-    }));
-  }, [profile, user]);
-
-  const savingsCapacity = useMemo(() => {
-    const income = Number(form.monthlyIncome) || 0;
-    const expenses = Number(form.fixedExpenses) || 0;
-    return Math.max(income - expenses, 0);
-  }, [form.monthlyIncome, form.fixedExpenses]);
 
   const onChange = (event) => {
     const { name, value } = event.target;
@@ -90,15 +79,6 @@ export default function OnboardingPage() {
     }
 
     if (step === 2) {
-      if (!form.monthlyIncome || !form.fixedExpenses) {
-        return '월 소득과 고정 지출을 입력해 주세요.';
-      }
-      if (Number(form.fixedExpenses) > Number(form.monthlyIncome)) {
-        return '고정 지출이 월 소득보다 클 수 없습니다.';
-      }
-    }
-
-    if (step === 3) {
       if (!form.investmentPropensity) {
         return '투자 성향을 선택해 주세요.';
       }
@@ -117,7 +97,7 @@ export default function OnboardingPage() {
       return;
     }
     setError('');
-    setStep((prev) => Math.min(prev + 1, 3));
+    setStep((prev) => Math.min(prev + 1, 2));
   };
 
   const goPrev = () => {
@@ -127,8 +107,8 @@ export default function OnboardingPage() {
 
   const onSubmit = async (event) => {
     event.preventDefault();
-    // 1·2단계에서 Enter / 다음 버튼 연속 클릭으로 submit 되는 것 방지
-    if (step !== 3) {
+    // 첫 단계에서 Enter / 다음 버튼 연속 클릭으로 submit 되는 것 방지
+    if (step !== 2) {
       goNext();
       return;
     }
@@ -147,9 +127,6 @@ export default function OnboardingPage() {
         displayName: form.displayName.trim(),
         age: Number(form.age),
         occupation: form.occupation.trim(),
-        monthlyIncome: Number(form.monthlyIncome),
-        fixedExpenses: Number(form.fixedExpenses),
-        estimatedMonthlySavings: savingsCapacity,
         investmentPropensity: form.investmentPropensity,
         targetAssetAmount: Number(form.targetAssetAmount),
         targetYears: Number(form.targetYears),
@@ -170,14 +147,13 @@ export default function OnboardingPage() {
     <div className="auth-shell">
       <AppHeader />
       <main className="auth-card auth-card-wide">
-        <p className="step-label">온보딩 {step} / 3</p>
+        <p className="step-label">온보딩 {step} / 2</p>
         <h1>맞춤 자산 프로필 설정</h1>
-        <p className="muted">입력하신 정보는 추천과 로드맵 생성에 사용됩니다.</p>
+        <p className="muted">기본 정보와 목표는 맞춤 추천에, 소득·지출은 생성된 Demo 금융 데이터에 기반해 사용됩니다.</p>
 
         <div className="stepper" aria-hidden="true">
           <span className={step >= 1 ? 'active' : ''} />
           <span className={step >= 2 ? 'active' : ''} />
-          <span className={step >= 3 ? 'active' : ''} />
         </div>
 
         <form onSubmit={onSubmit} className="form-stack">
@@ -221,42 +197,6 @@ export default function OnboardingPage() {
           )}
 
           {step === 2 && (
-            <>
-              <h2 className="section-title">소득 · 지출</h2>
-              <label>
-                월 소득 (원)
-                <input
-                  type="number"
-                  name="monthlyIncome"
-                  min="0"
-                  step="10000"
-                  value={form.monthlyIncome}
-                  onChange={onChange}
-                  placeholder="3000000"
-                  required
-                />
-              </label>
-              <label>
-                월 고정 지출 (원)
-                <input
-                  type="number"
-                  name="fixedExpenses"
-                  min="0"
-                  step="10000"
-                  value={form.fixedExpenses}
-                  onChange={onChange}
-                  placeholder="1500000"
-                  required
-                />
-              </label>
-              <div className="info-box">
-                예상 월 저축 여력:{' '}
-                <strong>{savingsCapacity.toLocaleString('ko-KR')}원</strong>
-              </div>
-            </>
-          )}
-
-          {step === 3 && (
             <>
               <h2 className="section-title">투자 성향 · 목표 자산</h2>
               <fieldset className="propensity-grid">
@@ -329,7 +269,7 @@ export default function OnboardingPage() {
               <span />
             )}
 
-            {step < 3 ? (
+            {step < 2 ? (
               <button type="button" className="btn btn-primary" onClick={goNext}>
                 다음
               </button>

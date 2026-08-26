@@ -17,6 +17,7 @@ from app.models.simulation import (
     SimulationResponse,
     TrajectoryPoint,
 )
+from app.models.transaction import FinancialSummary
 
 
 def monthly_deposit(assumptions: SimulationAssumptions) -> int:
@@ -153,6 +154,7 @@ def run_simulation(request: SimulationRequest) -> SimulationResponse:
 
 
 def assumptions_from_profile(profile: dict, current_assets: int | None = None) -> SimulationAssumptions:
+    """Legacy compatibility helper. New service paths use financial summaries."""
     income = int(profile.get("monthlyIncome") or 0)
     expenses = int(profile.get("fixedExpenses") or 0)
     estimated = int(profile.get("estimatedMonthlySavings") or max(income - expenses, 0))
@@ -165,6 +167,30 @@ def assumptions_from_profile(profile: dict, current_assets: int | None = None) -
         monthlyIncome=income,
         monthlyExpenses=expenses,
         savingsRate=savings_rate,
+        annualInterestRate=3.5,
+        currentAssets=max(assets, 0),
+        horizonMonths=max(years * 12, 12),
+        targetAssetAmount=int(profile.get("targetAssetAmount") or 0),
+    )
+
+
+def assumptions_from_financial_summary(
+    financial_summary: FinancialSummary,
+    profile: dict,
+    current_assets: int | None = None,
+) -> SimulationAssumptions:
+    """Build baseline assumptions from the shared generated monthly summary."""
+    income = financial_summary.totalIncome
+    expenses = financial_summary.totalExpenses
+    capacity = financial_summary.monthlySavingsCapacity
+    surplus = max(income - expenses, 0)
+    savings_rate = round((capacity / surplus) * 100, 2) if surplus else 0.0
+    years = int(profile.get("targetYears") or 5)
+    assets = current_assets if current_assets is not None else capacity * 6
+    return SimulationAssumptions(
+        monthlyIncome=income,
+        monthlyExpenses=expenses,
+        savingsRate=min(max(savings_rate, 0), 100),
         annualInterestRate=3.5,
         currentAssets=max(assets, 0),
         horizonMonths=max(years * 12, 12),

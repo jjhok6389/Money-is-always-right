@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import coach, dashboard, etf, health, products, reports, simulation, transactions, users
+from app.routes import coach, dashboard, etf, health, products, reports, simulation, transactions, tutorial, users
 from app.services import etf_scheduler
 
 
@@ -52,3 +52,4 @@ app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"]
 app.include_router(simulation.router, prefix="/api/simulation", tags=["simulation"])
 app.include_router(coach.router, prefix="/api/coach", tags=["coach"])
 app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
+app.include_router(tutorial.router, prefix="/api/tutorial", tags=["tutorial"])

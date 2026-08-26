@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import CoachReportPlayer from '../components/CoachReportPlayer';
 import { useAuth } from '../contexts/AuthContext';
@@ -46,11 +46,11 @@ export default function CoachReportPlayPage() {
       <AppHeader />
       <main className="page-content page-content-report">
         {loading && (
-          <section className="report-loading">
+          <section className="report-loading" role="status" aria-live="polite">
             <p className="eyebrow">금융 코치</p>
             <h1>{profile?.displayName || '회원'}님의 금융 이야기를 정리하고 있어요</h1>
             <p className="lead">저장된 리포트를 불러오는 중입니다.</p>
-            <div className="report-loading-pulse" aria-hidden />
+            <div className="report-loading-spinner" aria-hidden="true" />
           </section>
         )}
         {!loading && error && (

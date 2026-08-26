@@ -1,6 +1,6 @@
 import { apiRequest } from './api';
 
-export function fetchTransactionPipeline({ month, count = 40 } = {}) {
+export function fetchTransactionPipeline({ month, count = 45 } = {}) {
   const params = new URLSearchParams();
   if (month) params.set('month', month);
   params.set('count', String(count));

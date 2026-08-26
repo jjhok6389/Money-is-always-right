@@ -30,7 +30,8 @@ def upsert_my_profile(
     current_user: dict = Depends(get_current_user),
 ):
     uid = current_user["uid"]
-    data = payload.model_dump()
+    # Omitted legacy financial fields are left untouched in existing documents.
+    data = payload.model_dump(exclude_none=True)
     if not data.get("email"):
         data["email"] = current_user.get("email")
     saved = firebase_service.upsert_user_document(uid, data)

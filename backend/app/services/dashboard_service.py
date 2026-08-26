@@ -75,14 +75,11 @@ PORTFOLIO_BY_PROPENSITY: dict[str, list[tuple[str, str, float]]] = {
 def _profile_from_document(doc: dict[str, Any] | None) -> ProfileSnapshot | None:
     if not doc:
         return None
-    required = ("monthlyIncome", "fixedExpenses", "estimatedMonthlySavings", "targetAssetAmount", "targetYears")
+    required = ("targetAssetAmount", "targetYears")
     if any(doc.get(key) is None for key in required):
         return None
     return ProfileSnapshot(
         displayName=doc.get("displayName"),
-        monthlyIncome=int(doc["monthlyIncome"]),
-        fixedExpenses=int(doc["fixedExpenses"]),
-        estimatedMonthlySavings=int(doc["estimatedMonthlySavings"]),
         investmentPropensity=doc.get("investmentPropensity") or "neutral",
         targetAssetAmount=int(doc["targetAssetAmount"]),
         targetYears=int(doc["targetYears"]),
@@ -92,11 +89,11 @@ def _profile_from_document(doc: dict[str, Any] | None) -> ProfileSnapshot | None
     )
 
 
-def _estimate_current_assets(profile: ProfileSnapshot, override: Optional[int]) -> int:
+def _estimate_current_assets(monthly_capacity: int, override: Optional[int]) -> int:
     if override is not None:
         return override
     # Conservative estimate: savings capacity accumulated over a few months.
-    return max(profile.estimatedMonthlySavings, 0) * DEFAULT_ASSET_MONTHS
+    return max(monthly_capacity, 0) * DEFAULT_ASSET_MONTHS
 
 
 def _build_portfolio(current_assets: int, propensity: str) -> list[PortfolioSlice]:
@@ -129,6 +126,7 @@ def _build_consumption(pipeline_result) -> tuple[list[ConsumptionBar], dict]:
             expenseType=item.expenseType,
         )
         for item in pipeline_result.categorySummaries
+        if item.expenseType in ("fixed", "variable")
     ]
     return bars, pipeline_result.totals
 
@@ -301,13 +299,15 @@ async def build_dashboard(
         raise ValueError("온보딩 프로필이 필요합니다.")
 
     month = request.month or datetime.utcnow().strftime("%Y-%m")
-    pipeline = transaction_pipeline.run_pipeline(user_id=user_id, month=month, count=45)
+    pipeline = transaction_pipeline.run_pipeline(
+        user_id=user_id,
+        month=month,
+        count=transaction_pipeline.DEFAULT_TRANSACTION_COUNT,
+    )
+    financial_summary = pipeline.financialSummary
+    monthly_capacity = financial_summary.monthlySavingsCapacity
 
-    # Blend stated savings capacity with observed cashflow from the dummy ledger.
-    observed_net = max(int(pipeline.totals.get("netCashflow") or 0), 0)
-    monthly_capacity = max(profile.estimatedMonthlySavings, observed_net // 2)
-
-    current_assets = _estimate_current_assets(profile, request.currentAssets)
+    current_assets = _estimate_current_assets(monthly_capacity, request.currentAssets)
     debt_balance = request.debtBalance if request.debtBalance is not None else 0
 
     portfolio = _build_portfolio(current_assets, profile.investmentPropensity)
@@ -335,6 +335,7 @@ async def build_dashboard(
         portfolio=portfolio,
         consumption=consumption,
         consumptionTotals=consumption_totals,
+        financialSummary=financial_summary,
         goal=goal,
         roadmap=roadmap,
         recommendedProducts=recommended,

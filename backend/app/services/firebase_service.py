@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
+from threading import Lock
+from typing import Any, Callable
 
 import firebase_admin
 from firebase_admin import auth, credentials, firestore
@@ -15,6 +16,7 @@ from firebase_admin import auth, credentials, firestore
 from app.config import get_settings
 
 _demo_store: dict[str, dict[str, Any]] = {}
+_demo_store_lock = Lock()
 _initialized = False
 _demo_mode = False
 
@@ -113,6 +115,34 @@ def upsert_user_document(uid: str, payload: dict[str, Any]) -> dict[str, Any]:
     data = snap.to_dict() or {}
     data["uid"] = uid
     return data
+
+
+def update_tutorial_progress(
+    uid: str,
+    updater: Callable[[dict[str, Any]], dict[str, Any]],
+) -> dict[str, Any]:
+    """Atomically update only the tutorialProgress map on a user document."""
+    init_firebase()
+    if _demo_mode:
+        with _demo_store_lock:
+            current = _demo_store.get(uid, {})
+            progress = updater(dict(current.get("tutorialProgress") or {}))
+            _demo_store[uid] = {**current, "uid": uid, "tutorialProgress": progress}
+            return progress
+
+    db = firestore.client()
+    ref = db.collection("users").document(uid)
+    transaction = db.transaction()
+
+    @firestore.transactional
+    def update_in_transaction(active_transaction):
+        snapshot = ref.get(transaction=active_transaction)
+        current = snapshot.to_dict() if snapshot.exists else {}
+        progress = updater(dict((current or {}).get("tutorialProgress") or {}))
+        active_transaction.set(ref, {"tutorialProgress": progress}, merge=True)
+        return progress
+
+    return update_in_transaction(transaction)
 
 
 def is_demo_mode() -> bool:

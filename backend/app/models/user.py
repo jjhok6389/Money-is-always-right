@@ -23,9 +23,10 @@ class UserProfileUpdate(BaseModel):
     displayName: str = Field(min_length=1)
     age: int = Field(ge=18, le=100)
     occupation: str = Field(min_length=1)
-    monthlyIncome: int = Field(ge=0)
-    fixedExpenses: int = Field(ge=0)
-    estimatedMonthlySavings: int = Field(ge=0)
+    # Legacy optional fields: retained for existing Firebase documents only.
+    monthlyIncome: Optional[int] = Field(default=None, ge=0)
+    fixedExpenses: Optional[int] = Field(default=None, ge=0)
+    estimatedMonthlySavings: Optional[int] = Field(default=None, ge=0)
     investmentPropensity: InvestmentPropensity
     targetAssetAmount: int = Field(ge=0)
     targetYears: int = Field(ge=1, le=40)

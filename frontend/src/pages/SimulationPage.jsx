@@ -2,14 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import AppHeader from '../components/AppHeader';
 import TrajectoryChart from '../components/TrajectoryChart';
 import { useAuth } from '../contexts/AuthContext';
+import useFinancialSummary from '../hooks/useFinancialSummary';
 import { runSimulationFromProfile } from '../services/simulationService';
 
-function defaultScenarioFromProfile(profile) {
-  const income = Number(profile?.monthlyIncome) || 0;
-  const expenses = Number(profile?.fixedExpenses) || 0;
-  const estimated = Number(profile?.estimatedMonthlySavings) || Math.max(income - expenses, 0);
+function defaultScenarioFromFinancialData(profile, financialSummary) {
+  const income = Number(financialSummary?.totalIncome) || 0;
+  const expenses = Number(financialSummary?.totalExpenses) || 0;
+  const estimated = Number(financialSummary?.monthlySavingsCapacity) || 0;
   const surplus = Math.max(income - expenses, 0);
-  const savingsRate = surplus > 0 ? Math.min(100, Math.round((estimated / surplus) * 1000) / 10) : 100;
+  const savingsRate = surplus > 0 ? Math.min(100, Math.round((estimated / surplus) * 1000) / 10) : 0;
 
   return {
     monthlyIncome: income,
@@ -22,16 +23,16 @@ function defaultScenarioFromProfile(profile) {
 
 export default function SimulationPage() {
   const { profile } = useAuth();
-  const baselineDefaults = useMemo(() => defaultScenarioFromProfile(profile), [profile]);
+  const { financialSummary, loading: financialLoading, error: financialError } = useFinancialSummary();
+  const baselineDefaults = useMemo(
+    () => defaultScenarioFromFinancialData(profile, financialSummary),
+    [profile, financialSummary],
+  );
   const [scenario, setScenario] = useState(baselineDefaults);
   const [currentAssets, setCurrentAssets] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    setScenario(defaultScenarioFromProfile(profile));
-  }, [profile]);
 
   const projectedMonthlyDeposit = useMemo(() => {
     const surplus = Math.max(Number(scenario.monthlyIncome) - Number(scenario.monthlyExpenses), 0);
@@ -44,10 +45,10 @@ export default function SimulationPage() {
   };
 
   const resetToBaseline = () => {
-    setScenario(defaultScenarioFromProfile(profile));
+    setScenario(defaultScenarioFromFinancialData(profile, financialSummary));
   };
 
-  const run = async () => {
+  const run = async (scenarioInput = scenario) => {
     if (!profile) {
       setError('온보딩 프로필이 필요합니다.');
       return;
@@ -57,18 +58,15 @@ export default function SimulationPage() {
     try {
       const payload = {
         profile: {
-          monthlyIncome: Number(profile.monthlyIncome) || 0,
-          fixedExpenses: Number(profile.fixedExpenses) || 0,
-          estimatedMonthlySavings: Number(profile.estimatedMonthlySavings) || 0,
           targetAssetAmount: Number(profile.targetAssetAmount) || 0,
           targetYears: Number(profile.targetYears) || 5,
         },
         scenario: {
-          monthlyIncome: Number(scenario.monthlyIncome) || 0,
-          monthlyExpenses: Number(scenario.monthlyExpenses) || 0,
-          savingsRate: Number(scenario.savingsRate) || 0,
-          annualInterestRate: Number(scenario.annualInterestRate) || 0,
-          horizonMonths: Number(scenario.horizonMonths) || 60,
+          monthlyIncome: Number(scenarioInput.monthlyIncome) || 0,
+          monthlyExpenses: Number(scenarioInput.monthlyExpenses) || 0,
+          savingsRate: Number(scenarioInput.savingsRate) || 0,
+          annualInterestRate: Number(scenarioInput.annualInterestRate) || 0,
+          horizonMonths: Number(scenarioInput.horizonMonths) || 60,
         },
         label: '맞춤 시나리오',
       };
@@ -85,12 +83,14 @@ export default function SimulationPage() {
   };
 
   useEffect(() => {
-    if (profile) {
-      run();
+    if (profile && financialSummary) {
+      const defaults = defaultScenarioFromFinancialData(profile, financialSummary);
+      setScenario(defaults);
+      run(defaults);
     }
     // Initial run once profile is ready.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.monthlyIncome, profile?.targetAssetAmount]);
+  }, [profile?.targetAssetAmount, financialSummary?.month]);
 
   return (
     <div className="page-shell">
@@ -103,6 +103,7 @@ export default function SimulationPage() {
             소득·지출·저축률·금리를 바꿔 보고, 기본 로드맵과 변경 시나리오의 자산
             궤적을 비교하세요.
           </p>
+          <p className="muted">기본값은 생성된 월간 Demo 금융 데이터 기준입니다.</p>
         </section>
 
         <section className="sim-controls">
@@ -187,12 +188,13 @@ export default function SimulationPage() {
           <button type="button" className="btn btn-ghost" onClick={resetToBaseline}>
             기본값으로 되돌리기
           </button>
-          <button type="button" className="btn btn-primary" onClick={run} disabled={loading}>
+          <button type="button" className="btn btn-primary" onClick={() => run()} disabled={loading || financialLoading}>
             {loading ? '계산 중...' : '시뮬레이션 실행'}
           </button>
         </div>
 
-        {error && <p className="alert alert-error" role="alert">{error}</p>}
+        {financialLoading && <p className="muted">Demo 금융 데이터를 불러오는 중...</p>}
+        {(error || financialError) && <p className="alert alert-error" role="alert">{error || financialError}</p>}
 
         {result && (
           <>

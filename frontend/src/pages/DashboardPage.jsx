@@ -3,6 +3,7 @@ import AppHeader from '../components/AppHeader';
 import ConsumptionBarChart from '../components/ConsumptionBarChart';
 import EtfVolatilityChart from '../components/EtfVolatilityChart';
 import PortfolioDonut from '../components/PortfolioDonut';
+import TutorialProgressPanel from '../components/TutorialProgressPanel';
 import { useAuth } from '../contexts/AuthContext';
 import { computeDashboard } from '../services/dashboardService';
 import { fetchEtfDetail } from '../services/etfService';
@@ -64,9 +65,6 @@ export default function DashboardPage() {
       const payload = {
         profile: {
           displayName: profile.displayName,
-          monthlyIncome: Number(profile.monthlyIncome) || 0,
-          fixedExpenses: Number(profile.fixedExpenses) || 0,
-          estimatedMonthlySavings: Number(profile.estimatedMonthlySavings) || 0,
           investmentPropensity: propensity,
           targetAssetAmount: Number(profile.targetAssetAmount) || 0,
           targetYears: Number(profile.targetYears) || 1,
@@ -136,6 +134,8 @@ export default function DashboardPage() {
         {error && <p className="alert alert-error" role="alert">{error}</p>}
         {loading && !data && <p className="muted">대시보드를 생성하는 중...</p>}
 
+        <TutorialProgressPanel />
+
         {data && (
           <>
             <section className="stat-row">
@@ -177,7 +177,7 @@ export default function DashboardPage() {
               <section className="panel chart-panel">
                 <h2>월간 소비 분석 ({data.month})</h2>
                 <p className="muted">
-                  총 지출 {Number(data.consumptionTotals.totalExpenses || 0).toLocaleString('ko-KR')}원
+                  생성된 Demo 거래 기준 · 총 생활비 {Number(data.financialSummary?.totalExpenses || 0).toLocaleString('ko-KR')}원
                 </p>
                 <ConsumptionBarChart data={data.consumption} />
               </section>

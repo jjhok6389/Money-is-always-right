@@ -14,9 +14,6 @@ function buildProfilePayload(profile) {
   if (!profile) return undefined;
   return {
     displayName: profile.displayName,
-    monthlyIncome: Number(profile.monthlyIncome) || 0,
-    fixedExpenses: Number(profile.fixedExpenses) || 0,
-    estimatedMonthlySavings: Number(profile.estimatedMonthlySavings) || 0,
     investmentPropensity: profile.investmentPropensity || 'neutral',
     targetAssetAmount: Number(profile.targetAssetAmount) || 0,
     targetYears: Number(profile.targetYears) || 1,
@@ -66,7 +63,7 @@ export default function CoachReportStartPage() {
     <div className="page-shell report-shell">
       <AppHeader />
       <main className="page-content page-content-report">
-        <section className="report-loading">
+        <section className="report-loading" role="status" aria-live="polite">
           <p className="eyebrow">금융 코치</p>
           <h1>
             {starting
@@ -79,7 +76,7 @@ export default function CoachReportStartPage() {
               : '잠시 후 다시 시도해 주세요.'}
           </p>
           {error && <p className="alert alert-error">{error}</p>}
-          {starting && <div className="report-loading-pulse" aria-hidden />}
+          {starting && <div className="report-loading-spinner" aria-hidden="true" />}
           {!starting && (
             <div className="hero-actions">
               <button type="button" className="btn btn-primary" onClick={runGenerate}>

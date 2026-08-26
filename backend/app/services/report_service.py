@@ -87,13 +87,13 @@ def build_insight(delta: int, top_label: str | None, has_consumption: bool) -> s
     man = max(1, int(round(delta / 10_000)))
     if not has_consumption:
         return (
-            f"연동된 소비 내역이 없어 프로필 고정지출·저축 여력 기준으로 안내합니다. "
-            f"월 {man}만원 정도를 추가 자산형성에 활용하는 시나리오를 분석했습니다."
+            "아직 소비 내역이 충분하지 않아 프로필의 고정지출과 저축 여력을 기준으로 살펴봤어요. "
+            f"이번 달에는 월 {man}만원을 미래의 자산형성에 먼저 배분해보는 건 어떨까요?"
         )
     cat = top_label or "변동 소비"
     return (
-        f"최근 기준으로 {cat} 지출 비중이 눈에 띕니다. "
-        f"월 {man}만원 정도를 추가 자산형성에 활용하는 시나리오를 분석했습니다."
+        f"최근에는 {cat} 지출 비중이 가장 눈에 띄어요. "
+        f"이번 달에는 이 항목에서 월 {man}만원을 자산형성으로 옮겨보는 건 어떨까요?"
     )
 
 
@@ -106,7 +106,7 @@ def allocate(monthly_deposit: int, propensity: str) -> AllocationSplit:
     return AllocationSplit(deposit=deposit_total - etf, etf=etf)
 
 
-def _downsample_trajectory(points: list[Any], max_points: int = 37) -> list[TrajectorySnap]:
+def _downsample_trajectory(points: list[Any], max_points: int = 73) -> list[TrajectorySnap]:
     if len(points) <= max_points:
         return [
             TrajectorySnap(
@@ -191,14 +191,12 @@ async def generate_report(user_id: str, request: GenerateReportRequest) -> Coach
         currentAssets=request.currentAssets,
     )
     dashboard = await dashboard_service.build_dashboard(user_id, stored, dash_req)
+    financial_summary = dashboard.financialSummary
 
     profile = dash_req.profile
     if profile is None and stored:
         profile = ProfileSnapshot(
             displayName=stored.get("displayName"),
-            monthlyIncome=int(stored.get("monthlyIncome") or 0),
-            fixedExpenses=int(stored.get("fixedExpenses") or 0),
-            estimatedMonthlySavings=int(stored.get("estimatedMonthlySavings") or 0),
             investmentPropensity=stored.get("investmentPropensity") or "neutral",
             targetAssetAmount=int(stored.get("targetAssetAmount") or 0),
             targetYears=int(stored.get("targetYears") or 1),
@@ -214,16 +212,14 @@ async def generate_report(user_id: str, request: GenerateReportRequest) -> Coach
     has_linked = len(consumption) > 0
     delta, top_label = compute_delta(capacity, consumption)
 
-    # Profile dict for simulation assumptions.
+    # Goals come from the profile; all monthly amounts come from one generated summary.
     sim_profile = {
-        "monthlyIncome": profile.monthlyIncome,
-        "fixedExpenses": profile.fixedExpenses,
-        "estimatedMonthlySavings": profile.estimatedMonthlySavings,
         "targetYears": profile.targetYears,
         "targetAssetAmount": profile.targetAssetAmount,
         "investmentPropensity": profile.investmentPropensity,
     }
-    baseline = simulation_service.assumptions_from_profile(
+    baseline = simulation_service.assumptions_from_financial_summary(
+        financial_summary,
         sim_profile,
         dashboard.goal.currentAssets,
     )
@@ -247,19 +243,16 @@ async def generate_report(user_id: str, request: GenerateReportRequest) -> Coach
         )
         for c in top_items
     ]
-    if not consumption_top and profile.fixedExpenses > 0:
+    if not consumption_top and financial_summary.fixedLivingExpenses > 0:
         consumption_top = [
             ConsumptionTopItem(
                 category="fixed",
-                categoryLabel="고정 지출(프로필)",
-                amount=int(profile.fixedExpenses),
+                categoryLabel="고정 생활비(Demo 거래)",
+                amount=financial_summary.fixedLivingExpenses,
             )
         ]
 
-    totals = dashboard.consumptionTotals or {}
-    spend = int(totals.get("totalExpenses") or 0)
-    if spend <= 0:
-        spend = int(profile.fixedExpenses or 0)
+    spend = financial_summary.totalExpenses
 
     months_baseline = dashboard.goal.estimatedMonthsToGoal
     months_scenario = sim.scenarioSummary.targetHitMonth
@@ -297,7 +290,7 @@ async def generate_report(user_id: str, request: GenerateReportRequest) -> Coach
         type=report_type,
         previousReportId=previous_id,
         displayName=profile.displayName or (stored or {}).get("displayName") or "",
-        income=int(profile.monthlyIncome or 0),
+        income=financial_summary.totalIncome,
         spend=spend,
         capacity=capacity,
         currentAssets=int(dashboard.goal.currentAssets or 0),
