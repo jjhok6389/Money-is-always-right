@@ -124,11 +124,12 @@ export default function DashboardPage() {
       <main className="page-content page-content-xl">
         <section className="hero-panel hero-panel-with-action">
           <div className="hero-panel-copy">
-            <p className="eyebrow">Phase 3 · 맞춤 대시보드</p>
+            <p className="eyebrow">맞춤 대시보드</p>
             <h1>자산 · 소비 · 목표 로드맵</h1>
             <p className="lead">
-              포트폴리오와 월간 소비를 시각화하고, 목표 자산 갭·달성률·예상 달성일을
-              바탕으로 실행 로드맵을 제시합니다.
+              포트폴리오와 월간 소비를 시각화하고, 
+              <br/>
+              목표 자산 갭·달성률·예상 달성일을 바탕으로 실행 로드맵을 제시합니다.
             </p>
           </div>
           <TutorialProgressPanel compact />

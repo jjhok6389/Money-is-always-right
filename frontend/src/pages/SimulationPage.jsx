@@ -97,7 +97,7 @@ export default function SimulationPage() {
       <AppHeader />
       <main className="page-content page-content-xl">
         <section className="hero-panel">
-          <p className="eyebrow">Phase 4 · 디지털 트윈</p>
+          <p className="eyebrow">디지털 트윈</p>
           <h1>미래 자산 시뮬레이션</h1>
           <p className="lead">
             소득·지출·저축률·금리를 바꿔 보고, 기본 로드맵과 변경 시나리오의 자산

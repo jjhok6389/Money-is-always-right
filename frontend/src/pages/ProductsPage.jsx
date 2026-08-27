@@ -67,7 +67,7 @@ export default function ProductsPage() {
       <AppHeader />
       <main className="page-content page-content-xl">
         <section className="hero-panel">
-          <p className="eyebrow">Phase 2 · 금감원 Open API</p>
+          <p className="eyebrow">금융상품</p>
           <h1>예금 · 적금 · 연금저축</h1>
           <p className="lead">
             금융감독원 금융상품한눈에 API로 예금·적금·연금저축 공시 정보를 조회합니다.

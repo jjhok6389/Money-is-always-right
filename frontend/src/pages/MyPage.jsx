@@ -177,7 +177,9 @@ export default function MyPage() {
           </dl>
           <p className="goal-note">목표: {profile?.goalDescription || '목표가 아직 없습니다.'}</p>
           <p className="muted mypage-hint">
-            기본 정보·투자 성향·목표는 「프로필 수정」에서 변경할 수 있습니다. 소득·지출은 Demo 거래에서 자동 생성됩니다.
+            기본 정보·투자 성향·목표는 「프로필 수정」에서 변경할 수 있습니다.
+            <br />
+            소득·지출은 Demo 거래에서 자동 생성됩니다.
           </p>
         </section>
       </main>

@@ -1,17 +1,60 @@
+@font-face {
+  font-family: 'Paperlogy';
+  src: url('./assets/fonts/Paperlogy-4Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Paperlogy';
+  src: url('./assets/fonts/Paperlogy-5Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Paperlogy';
+  src: url('./assets/fonts/Paperlogy-6SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Paperlogy';
+  src: url('./assets/fonts/Paperlogy-7Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Paperlogy';
+  src: url('./assets/fonts/Paperlogy-8ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --bg-top: #e8f2ef;
-  --bg-bottom: #f7f4ee;
-  --surface: rgba(255, 255, 255, 0.88);
-  --ink: #14231f;
-  --muted: #5b6b66;
-  --line: #d5e0db;
-  --accent: #0f766e;
-  --accent-strong: #0b5f59;
+  /* 현재: 흰·검·네이비. 원본(틸)은 .cursor/rules/ui-theme.mdc — 사용자가 "원래"면 복원 */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  --bg-top: #f4f6fb;
+  --bg-bottom: #ffffff;
+  --surface: rgba(255, 255, 255, 0.94);
+  --ink: #0b1220;
+  --muted: #5c6778;
+  --line: #dce3ee;
+  --accent: #1b3a5f;
+  --accent-strong: #0f2744;
   --danger: #b42318;
   --success: #067647;
-  --shadow: 0 18px 50px rgba(20, 35, 31, 0.08);
+  --shadow: 0 18px 50px rgba(11, 18, 32, 0.08);
   --radius: 18px;
-  font-family: 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+  font-family: 'Paperlogy', 'Noto Sans KR', sans-serif;
   color: var(--ink);
   background: linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
   line-height: 1.5;
@@ -84,7 +127,7 @@ textarea {
     min-height: 100vh;
     /* 하단 여백 = 콘텐츠 상단 여백(2rem)에 맞춰 로그아웃 아래 공간 확보 */
     padding: 1.4rem 0.9rem 2rem;
-    border-right: 1px solid rgba(213, 224, 219, 0.6);
+    border-right: 2px solid color-mix(in srgb, var(--ink) 22%, var(--line));
     background: transparent; /* 페이지 배경 그라데이션과 동일하게 */
     flex-shrink: 0;
   }
@@ -188,7 +231,7 @@ textarea {
 
 .mobile-icon-action.is-active {
   color: var(--accent-strong);
-  background: rgba(15, 118, 110, 0.1);
+  background: rgba(27, 58, 95, 0.1);
 }
 
 /* 사이드바: 무테두리 메뉴, 하단 작업은 아이콘과 텍스트를 함께 유지 */
@@ -214,7 +257,7 @@ textarea {
 .side-nav .btn:hover,
 .side-nav .nav-chip.is-active {
   border-color: transparent;
-  background: rgba(15, 118, 110, 0.08);
+  background: rgba(27, 58, 95, 0.08);
   box-shadow: none;
 }
 
@@ -235,7 +278,7 @@ textarea {
 }
 
 .brand {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: 'Paperlogy', 'Noto Sans KR', sans-serif;
   font-size: 1.15rem;
   font-weight: 600;
   color: var(--ink);
@@ -275,7 +318,7 @@ textarea {
   border-radius: 10px;
   border: 1px solid rgba(213, 224, 219, 0.95);
   background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 1px 2px rgba(20, 35, 31, 0.06);
+  box-shadow: 0 1px 2px rgba(11, 18, 32, 0.06);
   color: var(--ink);
   font-size: 0.88rem;
   font-weight: 550;
@@ -284,16 +327,16 @@ textarea {
 
 .nav-chip:hover {
   background: #fff;
-  border-color: rgba(15, 118, 110, 0.28);
-  box-shadow: 0 4px 12px rgba(20, 35, 31, 0.08);
+  border-color: rgba(27, 58, 95, 0.28);
+  box-shadow: 0 4px 12px rgba(11, 18, 32, 0.08);
   color: var(--accent-strong);
 }
 
 .nav-chip.is-active {
-  background: rgba(15, 118, 110, 0.1);
-  border-color: rgba(15, 118, 110, 0.35);
+  background: rgba(27, 58, 95, 0.1);
+  border-color: rgba(27, 58, 95, 0.35);
   color: var(--accent-strong);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 2px rgba(20, 35, 31, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 2px rgba(11, 18, 32, 0.05);
 }
 
 .nav-chip-user {
@@ -318,8 +361,8 @@ textarea {
 .page-shell {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 40%),
-    radial-gradient(circle at bottom right, rgba(180, 140, 70, 0.12), transparent 35%),
+    radial-gradient(circle at top left, rgba(27, 58, 95, 0.12), transparent 40%),
+    radial-gradient(circle at bottom right, rgba(27, 58, 95, 0.12), transparent 35%),
     linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
 }
 
@@ -343,7 +386,7 @@ textarea {
 .auth-card h1,
 .hero-panel h1 {
   margin: 0.35rem 0 0.5rem;
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: 'Paperlogy', 'Noto Sans KR', sans-serif;
   font-size: clamp(1.7rem, 3vw, 2.2rem);
   letter-spacing: -0.03em;
 }
@@ -374,7 +417,7 @@ textarea {
 
 .form-stack input:focus,
 .form-stack textarea:focus {
-  outline: 2px solid rgba(15, 118, 110, 0.25);
+  outline: 2px solid rgba(27, 58, 95, 0.25);
   border-color: var(--accent);
 }
 
@@ -411,7 +454,7 @@ textarea {
 }
 
 .btn-ghost:hover {
-  background: rgba(15, 118, 110, 0.06);
+  background: rgba(27, 58, 95, 0.06);
 }
 
 .auth-links {
@@ -472,7 +515,7 @@ textarea {
 .info-box {
   padding: 0.9rem 1rem;
   border-radius: 12px;
-  background: rgba(15, 118, 110, 0.08);
+  background: rgba(27, 58, 95, 0.08);
 }
 
 .propensity-grid {
@@ -574,8 +617,8 @@ textarea {
 .app-layout {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 40%),
-    radial-gradient(circle at bottom right, rgba(180, 140, 70, 0.12), transparent 35%),
+    radial-gradient(circle at top left, rgba(27, 58, 95, 0.12), transparent 40%),
+    radial-gradient(circle at bottom right, rgba(27, 58, 95, 0.12), transparent 35%),
     linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
 }
 
@@ -593,7 +636,7 @@ textarea {
 
 .app-footer strong {
   color: var(--ink);
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: 'Paperlogy', 'Noto Sans KR', sans-serif;
   font-size: 1rem;
 }
 
@@ -615,7 +658,7 @@ textarea {
 
 .footer-github:hover {
   color: var(--accent-strong);
-  background: rgba(15, 118, 110, 0.08);
+  background: rgba(27, 58, 95, 0.08);
 }
 
 .footer-github:focus-visible {
@@ -700,7 +743,7 @@ textarea {
   gap: 0.2rem;
   padding: 0.85rem;
   border-radius: 12px;
-  background: rgba(15, 118, 110, 0.07);
+  background: rgba(27, 58, 95, 0.07);
 }
 
 .chip small {
@@ -953,7 +996,7 @@ th {
   color: #fff;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 12px 30px rgba(15, 118, 110, 0.28);
+  box-shadow: 0 12px 30px rgba(27, 58, 95, 0.28);
 }
 
 .coach-panel {
@@ -974,7 +1017,7 @@ th {
   gap: 0.75rem;
   padding: 0.9rem 1rem;
   border-bottom: 1px solid var(--line);
-  background: rgba(15, 118, 110, 0.06);
+  background: rgba(27, 58, 95, 0.06);
 }
 
 .coach-header p {
@@ -1011,7 +1054,7 @@ th {
 
 .coach-bubble.assistant {
   justify-self: start;
-  background: #f3f7f5;
+  background: #f3f6fb;
   color: var(--ink);
 }
 
@@ -1131,7 +1174,7 @@ th {
 }
 
 .etf-card:hover {
-  border-color: #0f766e;
+  border-color: var(--accent);
 }
 
 .disclaimer-inline {
@@ -1284,7 +1327,7 @@ th {
 
 .report-scene-head h1 {
   margin: 0.2rem 0 0.4rem;
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: 'Paperlogy', 'Noto Sans KR', sans-serif;
   font-size: clamp(1.8rem, 4vw, 2.75rem);
   letter-spacing: -0.03em;
 }
@@ -1632,7 +1675,7 @@ th {
 
 .report-axis-mark line,
 .report-time-mark line {
-  stroke: rgba(96, 116, 110, 0.14);
+  stroke: rgba(92, 103, 120, 0.14);
   stroke-width: 1;
 }
 
@@ -1652,7 +1695,7 @@ th {
 }
 
 .report-line.baseline {
-  stroke: #8aa39b;
+  stroke: #8a97ab;
 }
 
 .report-line.scenario {
@@ -1671,7 +1714,7 @@ th {
   stroke-dasharray: 1800;
   stroke-dashoffset: 1800;
   animation: report-draw-scenario 2200ms var(--report-reveal-easing) forwards;
-  filter: drop-shadow(0 0 5px rgba(15, 118, 110, 0.38));
+  filter: drop-shadow(0 0 5px rgba(27, 58, 95, 0.38));
 }
 
 .report-chart.is-skipped .report-line.baseline,
@@ -1700,16 +1743,16 @@ th {
 @keyframes report-draw-scenario {
   0% {
     stroke-dashoffset: 1800;
-    filter: drop-shadow(0 0 8px rgba(15, 118, 110, 0.58));
+    filter: drop-shadow(0 0 8px rgba(27, 58, 95, 0.58));
   }
   100% {
     stroke-dashoffset: 0;
-    filter: drop-shadow(0 0 2px rgba(15, 118, 110, 0.12));
+    filter: drop-shadow(0 0 2px rgba(27, 58, 95, 0.12));
   }
 }
 
 .report-target {
-  stroke: rgba(180, 140, 70, 0.55);
+  stroke: rgba(27, 58, 95, 0.55);
   stroke-dasharray: 4 4;
   stroke-width: 1.5;
 }
@@ -1730,7 +1773,7 @@ th {
   stroke-width: 2;
 }
 
-.report-endpoint.baseline { fill: #8aa39b; }
+.report-endpoint.baseline { fill: #8a97ab; }
 .report-endpoint.scenario { fill: var(--accent); }
 
 .report-chart.phase-hold .report-endpoint.baseline,
@@ -1763,7 +1806,7 @@ th {
   height: 2px;
 }
 
-.report-chart-legend i.baseline { background: #8aa39b; }
+.report-chart-legend i.baseline { background: #8a97ab; }
 .report-chart-legend i.scenario { background: var(--accent); }
 
 .report-scenario-legend,
@@ -1895,7 +1938,7 @@ th {
   animation-delay: calc(var(--reveal-delay, 0ms) + var(--report-reveal-duration));
 }
 
-.report-allocation-track .deposit { background: #8aa39b; }
+.report-allocation-track .deposit { background: #8a97ab; }
 .report-allocation-track .etf {
   background: var(--accent);
   animation-delay: calc(var(--reveal-delay, 0ms) + var(--report-reveal-duration) + 180ms);
@@ -1930,7 +1973,7 @@ th {
   height: 0.55rem;
 }
 
-.report-allocation-details i.deposit { background: #8aa39b; }
+.report-allocation-details i.deposit { background: #8a97ab; }
 .report-allocation-details i.etf { background: var(--accent); }
 
 .report-allocation-details strong {
@@ -2203,16 +2246,16 @@ th {
   padding: 0.45rem 0.45rem 0.45rem 0.95rem;
   border: 1px solid transparent;
   border-radius: 999px;
-  background: linear-gradient(135deg, #0f766e 0%, #0b5f59 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
   color: #fff;
   text-decoration: none;
-  box-shadow: 0 8px 20px rgba(15, 118, 110, 0.28);
+  box-shadow: 0 8px 20px rgba(27, 58, 95, 0.28);
   transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .tutorial-entry-btn:hover {
-  background: linear-gradient(135deg, #12857c 0%, #0f766e 100%);
-  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.36);
+  background: linear-gradient(135deg, #254a73 0%, var(--accent) 100%);
+  box-shadow: 0 10px 24px rgba(27, 58, 95, 0.36);
   transform: translateY(-1px);
 }
 
@@ -2353,7 +2396,7 @@ th {
 .tutorial-hero h1,
 .tutorial-chapter-head h1 {
   margin-bottom: 0.5rem;
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: 'Paperlogy', 'Noto Sans KR', sans-serif;
   letter-spacing: -0.03em;
 }
 
@@ -2472,7 +2515,7 @@ th {
   min-height: 2rem;
   padding: 0.25rem 0.45rem;
   border-radius: 999px;
-  background: rgba(15, 118, 110, 0.08);
+  background: rgba(27, 58, 95, 0.08);
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 750;
@@ -2505,7 +2548,7 @@ th {
   margin: 0;
   padding: 1rem;
   border-left: 3px solid var(--accent);
-  background: rgba(15, 118, 110, 0.08);
+  background: rgba(27, 58, 95, 0.08);
   animation: tutorial-celebrate 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -2713,7 +2756,7 @@ th {
 
 .tutorial-choice.is-selected {
   border-color: var(--accent);
-  background: rgba(15, 118, 110, 0.08);
+  background: rgba(27, 58, 95, 0.08);
   color: var(--accent-strong);
 }
 
@@ -2807,7 +2850,7 @@ th {
 
 .tutorial-quiz-options label.is-selected {
   border-color: var(--accent);
-  background: rgba(15, 118, 110, 0.07);
+  background: rgba(27, 58, 95, 0.07);
 }
 
 .tutorial-quiz-options input {
@@ -2886,7 +2929,7 @@ th {
 
 .tutorial-reward-options button.is-selected {
   border-color: var(--accent);
-  background: rgba(15, 118, 110, 0.08);
+  background: rgba(27, 58, 95, 0.08);
 }
 
 .tutorial-reward-options button span {

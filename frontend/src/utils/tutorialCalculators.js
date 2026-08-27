@@ -81,8 +81,8 @@ export function monthsToReachTarget(targetAmount, monthlyDeposit, annualRate = 3
 }
 
 export const RISK_EXAMPLES = [
-  { id: 'low', label: '좁은 변동폭 가정', upside: 3, downside: -2, color: '#6b8f86' },
-  { id: 'medium', label: '중간 변동폭 가정', upside: 7, downside: -10, color: '#0f766e' },
+  { id: 'low', label: '좁은 변동폭 가정', upside: 3, downside: -2, color: '#8a97ab' },
+  { id: 'medium', label: '중간 변동폭 가정', upside: 7, downside: -10, color: '#1b3a5f' },
   { id: 'high', label: '넓은 변동폭 가정', upside: 14, downside: -28, color: '#b45f45' },
 ];
 

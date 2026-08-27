@@ -22,7 +22,7 @@ export default function TrajectoryChart({ data }) {
     <div className="chart-box chart-box-lg">
       <ResponsiveContainer width="100%" height={340}>
         <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#d5e0db" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#dce3ee" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={24} />
           <YAxis
             tickFormatter={(value) => `${Math.round(value / 10000)}만`}
@@ -39,7 +39,7 @@ export default function TrajectoryChart({ data }) {
             type="monotone"
             dataKey="baselineAssets"
             name="기본 로드맵"
-            stroke="#1d4e89"
+            stroke="#0f2744"
             strokeWidth={2.5}
             dot={false}
           />
@@ -47,7 +47,7 @@ export default function TrajectoryChart({ data }) {
             type="monotone"
             dataKey="scenarioAssets"
             name="변경 시나리오"
-            stroke="#0f766e"
+            stroke="#3d5a80"
             strokeWidth={2.5}
             dot={false}
           />
@@ -55,7 +55,7 @@ export default function TrajectoryChart({ data }) {
             type="monotone"
             dataKey="targetAssetAmount"
             name="목표 자산"
-            stroke="#c2410c"
+            stroke="#8a97ab"
             strokeDasharray="6 6"
             strokeWidth={1.5}
             dot={false}
