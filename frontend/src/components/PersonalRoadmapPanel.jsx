@@ -295,7 +295,12 @@ export default function PersonalRoadmapPanel({ roadmap, loading, error, onRetry,
                   <span>{remainingPeriodText}</span>
                 </p>
               </div>
-              <div className="personal-roadmap-view-tabs" role="tablist" aria-label="금융 로드맵 보기 방식">
+              <div
+                className="personal-roadmap-view-tabs"
+                role="tablist"
+                aria-label="금융 로드맵 보기 방식"
+                data-active-view={activeView}
+              >
                 <button
                   type="button"
                   role="tab"
