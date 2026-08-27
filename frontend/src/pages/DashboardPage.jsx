@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AppHeader from '../components/AppHeader';
 import ConsumptionBarChart from '../components/ConsumptionBarChart';
 import EtfVolatilityChart from '../components/EtfVolatilityChart';
 import PortfolioDonut from '../components/PortfolioDonut';
+import PersonalRoadmapPanel from '../components/PersonalRoadmapPanel';
 import TutorialProgressPanel from '../components/TutorialProgressPanel';
 import { useAuth } from '../contexts/AuthContext';
 import { computeDashboard } from '../services/dashboardService';
 import { fetchEtfDetail } from '../services/etfService';
+import { generatePersonalRoadmap } from '../services/roadmapService';
 
 function formatDate(value) {
   if (!value) return '산출 불가';
@@ -43,6 +45,11 @@ export default function DashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [personalRoadmap, setPersonalRoadmap] = useState(null);
+  const [roadmapLoading, setRoadmapLoading] = useState(false);
+  const [roadmapError, setRoadmapError] = useState('');
+  const loadRequestRef = useRef(0);
+  const roadmapRequestRef = useRef(0);
   const [selectedEtf, setSelectedEtf] = useState(null);
   const [etfDetail, setEtfDetail] = useState(null);
   const [etfDetailLoading, setEtfDetailLoading] = useState(false);
@@ -51,38 +58,71 @@ export default function DashboardPage() {
   const propensity = profile?.investmentPropensity || 'neutral';
   const showEtfSection = propensity !== 'stable';
 
+  const createPayload = () => {
+    const payload = {
+      profile: {
+        displayName: profile?.displayName,
+        investmentPropensity: propensity,
+        targetAssetAmount: Number(profile?.targetAssetAmount) || 0,
+        targetYears: Number(profile?.targetYears) || 1,
+        goalDescription: profile?.goalDescription || '',
+        age: profile?.age,
+        occupation: profile?.occupation,
+      },
+    };
+    if (profile?.debtBalance != null && profile.debtBalance !== '') {
+      payload.debtBalance = Number(profile.debtBalance);
+    }
+    if (profile?.currentAssets != null && profile.currentAssets !== '') {
+      payload.currentAssets = Number(profile.currentAssets);
+    }
+    return payload;
+  };
+
+  const loadRoadmap = async (payload, month) => {
+    const requestId = ++roadmapRequestRef.current;
+    setRoadmapLoading(true);
+    setRoadmapError('');
+    try {
+      const result = await generatePersonalRoadmap({ ...payload, month, persist: true });
+      if (requestId === roadmapRequestRef.current) setPersonalRoadmap(result);
+    } catch (err) {
+      if (requestId === roadmapRequestRef.current) {
+        setRoadmapError(err.message || '개인 금융 로드맵을 불러오지 못했습니다.');
+      }
+    } finally {
+      if (requestId === roadmapRequestRef.current) setRoadmapLoading(false);
+    }
+  };
+
   // 자산/부채는 마이페이지에서 저장한 프로필 값을 읽어 계산한다.
   const load = async () => {
+    const requestId = ++loadRequestRef.current;
+    roadmapRequestRef.current += 1;
     if (!profile) {
       setError('온보딩 프로필이 필요합니다.');
       setLoading(false);
+      setRoadmapLoading(false);
+      setPersonalRoadmap(null);
       return;
     }
 
     setLoading(true);
     setError('');
+    setPersonalRoadmap(null);
+    setRoadmapError('');
     try {
-      const payload = {
-        profile: {
-          displayName: profile.displayName,
-          investmentPropensity: propensity,
-          targetAssetAmount: Number(profile.targetAssetAmount) || 0,
-          targetYears: Number(profile.targetYears) || 1,
-          goalDescription: profile.goalDescription || '',
-          age: profile.age,
-          occupation: profile.occupation,
-        },
-        debtBalance: Number(profile.debtBalance) || 0,
-      };
-      if (profile.currentAssets != null && profile.currentAssets !== '') {
-        payload.currentAssets = Number(profile.currentAssets);
-      }
+      const payload = createPayload();
       const result = await computeDashboard(payload);
+      if (requestId !== loadRequestRef.current) return;
       setData(result);
+      await loadRoadmap(payload, result.month);
     } catch (err) {
-      setError(err.message || '대시보드를 불러오지 못했습니다.');
+      if (requestId === loadRequestRef.current) {
+        setError(err.message || '대시보드를 불러오지 못했습니다.');
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) setLoading(false);
     }
   };
 
@@ -183,20 +223,13 @@ export default function DashboardPage() {
               </section>
             </div>
 
-            <section className="panel">
-              <h2>금융 로드맵</h2>
-              <ol className="roadmap-list">
-                {data.roadmap.map((item) => (
-                  <li key={`${item.priority}-${item.title}`}>
-                    <span className="roadmap-priority">{item.priority}</span>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <p>{item.detail}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </section>
+            <PersonalRoadmapPanel
+              roadmap={personalRoadmap}
+              loading={roadmapLoading}
+              error={roadmapError}
+              displayName={profile?.displayName}
+              onRetry={() => loadRoadmap(createPayload(), data.month)}
+            />
 
             <section className="panel">
               <h2>추천 금융상품</h2>
