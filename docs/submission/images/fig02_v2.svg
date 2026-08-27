@@ -58,50 +58,74 @@
   <rect x="484" y="184" width="118" height="30" rx="15" fill="#FFFFFF" stroke="#E8734A" stroke-width="1.5"/>
   <text class="ko" x="543" y="204" text-anchor="middle" font-size="15" font-weight="700" fill="#C4501F">전체의 1.8배</text>
 
-  <!-- ================= panel 3 ================= -->
-  <rect x="800" y="72" width="360" height="316" rx="10" fill="#F2F5F9"/>
+      <!-- ================= panel 3 ================= -->
+      <rect x="800" y="72" width="360" height="316" rx="10" fill="#F2F5F9"/>
 
-  <text class="ko panel-title" x="826" y="106">저축액 대비 금융부채비율</text>
-  <text class="ko note" x="826" y="128">단위: %</text>
+      <text class="ko panel-title"
+            x="826" y="106">저축액 대비 금융부채비율</text>
 
-  <line x1="826" y1="344" x2="1134" y2="344"
-        stroke="#C7CFD8" stroke-width="2"/>
+      <text class="ko note"
+            x="826" y="128">단위: %</text>
 
-  <!-- 100% 기준 -->
-  <rect x="850" y="199" width="86" height="145"
-        rx="4" fill="#9AA5B1"/>
+      <!-- 기준선 -->
+      <line x1="850" y1="344"
+            x2="1110" y2="344"
+            stroke="#C7CFD8"
+            stroke-width="2"/>
 
-  <text class="ko value"
-        x="893" y="189"
-        text-anchor="middle">100%</text>
+      <!-- 100% 이하 구간 : 동일 주황색의 저채도/저명도 -->
+      <rect x="930" y="199"
+      width="92"
+      height="145"
+      rx="4"
+      fill="#E8734A"/>
 
-  <text class="ko axis"
-        x="893" y="366"
-        text-anchor="middle">저축액 기준</text>
+      <!-- 100% 초과 구간 -->
+      <rect x="930" y="154"
+            width="92"
+            height="45"
+            rx="4"
+            fill="#ff2600"/>
 
-  <!-- 청년가구 131.1% -->
-  <rect x="1010" y="154" width="86" height="190"
-        rx="4" fill="#E8734A"/>
+      <!-- 값 -->
+      <text class="ko value-hi"
+            x="976" y="144"
+            text-anchor="middle">131.1%</text>
 
-  <text class="ko value-hi"
-        x="1053" y="144"
-        text-anchor="middle">131.1%</text>
+      <!-- 축 라벨 -->
+      <text class="ko axis"
+            x="976" y="366"
+            text-anchor="middle">청년가구</text>
 
-  <text class="ko axis"
-        x="1053" y="366"
-        text-anchor="middle">청년가구</text>
+      <!-- 100% 기준선 : 반드시 막대 위에 렌더링 -->
+      <line x1="850" y1="199"
+            x2="1110" y2="199"
+            stroke="#1E3A5F"
+            stroke-width="2"
+            stroke-dasharray="7 5"/>
 
-  <!-- 차이 -->
-  <text class="ko"
-        x="974" y="245"
-        text-anchor="middle"
-        font-size="14"
-        font-weight="700"
-        fill="#C4501F">+31.1%p</text>
+      <!-- 100% 라벨 -->
+      <text class="ko"
+            x="1108" y="191"
+            text-anchor="end"
+            font-size="14"
+            font-weight="700"
+            fill="#1E3A5F">100%</text>
 
-  <text class="ko note"
-        x="974" y="269"
-        text-anchor="middle">저축액보다 금융부채가 많음</text>
+      <!-- 초과분 callout -->
+      <rect x="916" y="162"
+            width="120" height="30"
+            rx="15"
+            fill="#FFFFFF"
+            stroke="#ff2600"
+            stroke-width="1.5"/>
+
+      <text class="ko"
+            x="976" y="182"
+            text-anchor="middle"
+            font-size="15"
+            font-weight="700"
+            fill="#ff2600">+31.1%p</text>
 
   <!-- caption -->
   <text class="ko cap" x="40" y="426">자료: 2025년 가계금융복지조사(국가데이터처·한국은행·금융감독원), 2025년 3월 말 기준 · 가구주 연령 39세 이하</text>
