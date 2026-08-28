@@ -285,7 +285,8 @@ class ServiceAndRepositoryTests(unittest.IsolatedAsyncioTestCase):
             dry_run=True,
         )
         self.assertEqual(len(roadmap.months), 3)
-        self.assertTrue(roadmap.dataQuality.currentAssetsEstimated)
+        # Holdings pipeline supplies Demo balances, so assets are not "estimated".
+        self.assertFalse(roadmap.dataQuality.currentAssetsEstimated)
         self.assertEqual(roadmap.dataQuality.financialSource, "mock")
         self.assertTrue(any("Demo" in item for item in roadmap.dataQuality.warnings))
 

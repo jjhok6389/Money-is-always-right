@@ -15,6 +15,7 @@ export default function TutorialProgressPanel({ detailed = false, compact = fals
       <Link
         to={error ? '#' : href}
         className="tutorial-entry-btn"
+        data-tour="tutorial-entry"
         aria-label={error ? '금융기초 튜토리얼 진행 상태를 다시 불러오세요' : `금융기초 튜토리얼, 진행률 ${pct}%`}
         onClick={error ? (event) => { event.preventDefault(); refresh(); } : undefined}
       >
