@@ -4,6 +4,7 @@ import ConsumptionBarChart from '../components/ConsumptionBarChart';
 import EtfVolatilityChart from '../components/EtfVolatilityChart';
 import PortfolioDonut from '../components/PortfolioDonut';
 import PersonalRoadmapPanel from '../components/PersonalRoadmapPanel';
+import ProductTour from '../components/ProductTour';
 import TutorialProgressPanel from '../components/TutorialProgressPanel';
 import { useAuth } from '../contexts/AuthContext';
 import { computeDashboard } from '../services/dashboardService';
@@ -54,30 +55,22 @@ export default function DashboardPage() {
   const [etfDetail, setEtfDetail] = useState(null);
   const [etfDetailLoading, setEtfDetailLoading] = useState(false);
   const [etfDetailError, setEtfDetailError] = useState('');
+  const [holdingsOpen, setHoldingsOpen] = useState(false);
 
   const propensity = profile?.investmentPropensity || 'neutral';
   const showEtfSection = propensity !== 'stable';
 
-  const createPayload = () => {
-    const payload = {
-      profile: {
-        displayName: profile?.displayName,
-        investmentPropensity: propensity,
-        targetAssetAmount: Number(profile?.targetAssetAmount) || 0,
-        targetYears: Number(profile?.targetYears) || 1,
-        goalDescription: profile?.goalDescription || '',
-        age: profile?.age,
-        occupation: profile?.occupation,
-      },
-    };
-    if (profile?.debtBalance != null && profile.debtBalance !== '') {
-      payload.debtBalance = Number(profile.debtBalance);
-    }
-    if (profile?.currentAssets != null && profile.currentAssets !== '') {
-      payload.currentAssets = Number(profile.currentAssets);
-    }
-    return payload;
-  };
+  const createPayload = () => ({
+    profile: {
+      displayName: profile?.displayName,
+      investmentPropensity: propensity,
+      targetAssetAmount: Number(profile?.targetAssetAmount) || 0,
+      targetYears: Number(profile?.targetYears) || 1,
+      goalDescription: profile?.goalDescription || '',
+      age: profile?.age,
+      occupation: profile?.occupation,
+    },
+  });
 
   const loadRoadmap = async (payload, month) => {
     const requestId = ++roadmapRequestRef.current;
@@ -95,7 +88,7 @@ export default function DashboardPage() {
     }
   };
 
-  // 자산/부채는 마이페이지에서 저장한 프로필 값을 읽어 계산한다.
+  // Demo holdings provide assets/debt; profile only supplies goals & propensity.
   const load = async () => {
     const requestId = ++loadRequestRef.current;
     roadmapRequestRef.current += 1;
@@ -154,8 +147,6 @@ export default function DashboardPage() {
     profile?.uid,
     profile?.targetAssetAmount,
     profile?.investmentPropensity,
-    profile?.currentAssets,
-    profile?.debtBalance,
   ]);
 
   return (
@@ -180,7 +171,7 @@ export default function DashboardPage() {
 
         {data && (
           <>
-            <section className="stat-row">
+            <section className="stat-row" data-tour="goal-stats">
               <article>
                 <h3>목표 달성률</h3>
                 <p>{data.goal.achievementRate}%</p>
@@ -199,7 +190,10 @@ export default function DashboardPage() {
               </article>
             </section>
 
-            <p className={`source-banner ${data.goal.onTrack ? 'live' : 'mock'}`}>
+            <p
+              className={`source-banner ${data.goal.onTrack ? 'live' : 'mock'}`}
+              data-tour="track-banner"
+            >
               {data.goal.onTrack
                 ? `목표 기간(${data.goal.targetYears}년) 내 달성 궤도에 있습니다.`
                 : `현재 저축 속도로는 목표 기간(${data.goal.targetYears}년) 내 달성이 어렵습니다.`}
@@ -208,15 +202,19 @@ export default function DashboardPage() {
             </p>
 
             <div className="dashboard-grid">
-              <section className="panel chart-panel">
+              <section className="panel chart-panel" data-tour="portfolio">
                 <h2>현재 자산 포트폴리오</h2>
                 <p className="muted">
-                  추정 자산 {Number(data.goal.currentAssets).toLocaleString('ko-KR')}원 · 투자 성향 기반 배분
+                  Demo 보유 {Number(data.goal.currentAssets).toLocaleString('ko-KR')}원 · 계좌{' '}
+                  {data.holdings?.accounts?.length || 0}개 합산
+                  {data.holdings?.totals?.totalLiabilities
+                    ? ` · 부채 ${Number(data.holdings.totals.totalLiabilities).toLocaleString('ko-KR')}원`
+                    : ''}
                 </p>
                 <PortfolioDonut data={data.portfolio} />
               </section>
 
-              <section className="panel chart-panel">
+              <section className="panel chart-panel" data-tour="consumption">
                 <h2>월간 소비 분석 ({data.month})</h2>
                 <p className="muted">
                   생성된 Demo 거래 기준 · 총 생활비 {Number(data.financialSummary?.totalExpenses || 0).toLocaleString('ko-KR')}원
@@ -228,6 +226,81 @@ export default function DashboardPage() {
               </section>
             </div>
 
+            {data.holdings && (
+              <section
+                className={`panel panel-collapsible${holdingsOpen ? ' is-open' : ''}`}
+                data-tour="holdings"
+              >
+                <button
+                  type="button"
+                  className="panel-collapse-toggle"
+                  aria-expanded={holdingsOpen}
+                  aria-controls="dashboard-holdings-body"
+                  onClick={() => setHoldingsOpen((open) => !open)}
+                >
+                  <span className="panel-collapse-toggle-copy">
+                    <h2>Demo 보유 원장</h2>
+                    <p className="muted">
+                      기준일 {data.holdings.asOf} · 순자산{' '}
+                      {Number(data.holdings.totals.netWorth).toLocaleString('ko-KR')}원
+                    </p>
+                  </span>
+                  <span className="panel-collapse-chevron" aria-hidden="true">
+                    ⌄
+                  </span>
+                </button>
+                {holdingsOpen && (
+                  <div id="dashboard-holdings-body" className="holdings-lists holdings-lists-compact">
+                    <div>
+                      <h3>계좌 · 투자</h3>
+                      <ul className="holdings-list">
+                        {data.holdings.accounts.map((account) => (
+                          <li key={account.id}>
+                            <strong>
+                              {account.institution} · {account.accountName}
+                            </strong>
+                            <span>{Number(account.balance).toLocaleString('ko-KR')}원</span>
+                          </li>
+                        ))}
+                        {data.holdings.investments.map((item) => (
+                          <li key={item.id}>
+                            <strong>
+                              {item.broker} · {item.name}
+                            </strong>
+                            <span>{Number(item.evalAmount).toLocaleString('ko-KR')}원</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h3>부채 · 보험</h3>
+                      <ul className="holdings-list">
+                        {(data.holdings.loans || []).length === 0 && (
+                          <li className="muted">등록된 부채 없음</li>
+                        )}
+                        {(data.holdings.loans || []).map((loan) => (
+                          <li key={loan.id}>
+                            <strong>
+                              {loan.loanName} · 연 {loan.interestRate}%
+                            </strong>
+                            <span>{Number(loan.balance).toLocaleString('ko-KR')}원</span>
+                          </li>
+                        ))}
+                        {data.holdings.insurances.map((item) => (
+                          <li key={item.id}>
+                            <strong>{item.productName}</strong>
+                            <span>
+                              월 {Number(item.monthlyPremium).toLocaleString('ko-KR')}원
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+
             <PersonalRoadmapPanel
               roadmap={personalRoadmap}
               loading={roadmapLoading}
@@ -236,7 +309,7 @@ export default function DashboardPage() {
               onRetry={() => loadRoadmap(createPayload(), data.month)}
             />
 
-            <section className="panel">
+            <section className="panel" data-tour="products">
               <h2>추천 금융상품</h2>
               <div className="product-grid">
                 {data.recommendedProducts.map((product) => (
@@ -329,6 +402,8 @@ export default function DashboardPage() {
           </>
         )}
       </main>
+
+      <ProductTour ready={Boolean(data) && !loading && Boolean(personalRoadmap || roadmapError)} />
 
       {selectedEtf && (
         <div className="modal-backdrop" role="presentation" onClick={closeEtfDetail}>

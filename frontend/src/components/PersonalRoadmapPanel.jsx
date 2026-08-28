@@ -260,6 +260,7 @@ export default function PersonalRoadmapPanel({ roadmap, loading, error, onRetry,
   const roadmapKey = roadmap ? `${roadmap.roadmapId}:${roadmap.generatedAt}` : 'empty';
   const [expanded, setExpanded] = useState({ roadmapKey, index: 0 });
   const [view, setView] = useState({ roadmapKey, mode: 'short' });
+  const [sectionOpen, setSectionOpen] = useState(true);
   const expandedIndex = expanded.roadmapKey === roadmapKey ? expanded.index : 0;
   const activeView = view.roadmapKey === roadmapKey ? view.mode : 'short';
   const normalizedName = typeof displayName === 'string' ? displayName.trim() : '';
@@ -281,62 +282,98 @@ export default function PersonalRoadmapPanel({ roadmap, loading, error, onRetry,
   };
 
   return (
-    <section className="panel personal-roadmap-panel" aria-busy={loading}>
+    <section
+      className={`panel personal-roadmap-panel panel-collapsible${sectionOpen ? ' is-open' : ''}`}
+      data-tour="roadmap"
+      aria-busy={loading}
+    >
       <div className="personal-roadmap-heading">
-        <div>
-          <h2>금융 로드맵</h2>
-          {roadmap && (
-            <div className="personal-roadmap-heading-row">
-              <div className="personal-roadmap-journey">
-                <p className="personal-roadmap-journey-owner">{journeyTitle}</p>
-                <p className="personal-roadmap-journey-target">
-                  <span>{targetMonthText}</span>
-                  <span className="personal-roadmap-journey-separator" aria-hidden="true">·</span>
-                  <span>{remainingPeriodText}</span>
+        <button
+          type="button"
+          className="panel-collapse-toggle"
+          aria-expanded={sectionOpen}
+          aria-controls="personal-roadmap-body"
+          onClick={() => setSectionOpen((open) => !open)}
+        >
+          <span className="panel-collapse-toggle-copy">
+            <h2>금융 로드맵</h2>
+            {!sectionOpen &&
+              (roadmap ? (
+                <p className="muted personal-roadmap-collapse-summary">
+                  {journeyTitle}
+                  <span className="personal-roadmap-journey-separator" aria-hidden="true">
+                    ·
+                  </span>
+                  {targetMonthText}
+                  <span className="personal-roadmap-journey-separator" aria-hidden="true">
+                    ·
+                  </span>
+                  {remainingPeriodText}
                 </p>
-              </div>
-              <div
-                className="personal-roadmap-view-tabs"
-                role="tablist"
-                aria-label="금융 로드맵 보기 방식"
-                data-active-view={activeView}
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeView === 'short'}
-                  onClick={() => setView({ roadmapKey, mode: 'short' })}
-                >
-                  3개월 보기
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeView === 'full'}
-                  onClick={() => setView({ roadmapKey, mode: 'full' })}
-                >
-                  전체 보기
-                </button>
-              </div>
+              ) : (
+                <p className="muted">
+                  {loading ? '개인 금융 로드맵을 계산하는 중...' : '목표 달성을 위한 3개월 실행 계획'}
+                </p>
+              ))}
+          </span>
+          <span className="panel-collapse-chevron" aria-hidden="true">
+            ⌄
+          </span>
+        </button>
+
+        {sectionOpen && roadmap && (
+          <div className="personal-roadmap-heading-row">
+            <div className="personal-roadmap-journey">
+              <p className="personal-roadmap-journey-owner">{journeyTitle}</p>
+              <p className="personal-roadmap-journey-target">
+                <span>{targetMonthText}</span>
+                <span className="personal-roadmap-journey-separator" aria-hidden="true">
+                  ·
+                </span>
+                <span>{remainingPeriodText}</span>
+              </p>
             </div>
-          )}
-        </div>
+            <div
+              className="personal-roadmap-view-tabs"
+              role="tablist"
+              aria-label="금융 로드맵 보기 방식"
+              data-active-view={activeView}
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeView === 'short'}
+                onClick={() => setView({ roadmapKey, mode: 'short' })}
+              >
+                3개월 보기
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeView === 'full'}
+                onClick={() => setView({ roadmapKey, mode: 'full' })}
+              >
+                전체 보기
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {loading && !roadmap && (
+      {sectionOpen && loading && !roadmap && (
         <p className="muted" role="status" aria-live="polite">
           개인 금융 로드맵을 계산하는 중...
         </p>
       )}
-      {error && (
+      {sectionOpen && error && (
         <div className="personal-roadmap-error" role="alert">
           <p>{error}</p>
           <button type="button" className="btn btn-ghost" onClick={onRetry}>다시 시도</button>
         </div>
       )}
 
-      {roadmap && (
-        <div aria-live="polite">
+      {sectionOpen && roadmap && (
+        <div id="personal-roadmap-body" aria-live="polite">
           {roadmap.longTermPlan?.targetReviewRequired && (
             <p className="personal-roadmap-target-alert" role="alert">
               설정한 목표 월이 지났어요. 달성 여부를 확인한 뒤 목표 기간을 다시 설정해 주세요.
@@ -354,6 +391,7 @@ export default function PersonalRoadmapPanel({ roadmap, loading, error, onRetry,
                 <li
                   key={`${item.month}-${action.actionType}`}
                   className={`${item.status === 'CURRENT' ? 'is-current' : ''} ${isExpanded ? 'is-expanded' : ''}`}
+                  {...(item.status === 'CURRENT' ? { 'data-tour': 'roadmap-current' } : {})}
                 >
                   <article className="personal-roadmap-card">
                     <button
@@ -365,7 +403,9 @@ export default function PersonalRoadmapPanel({ roadmap, loading, error, onRetry,
                     >
                       <span className="personal-roadmap-card-topline">
                         <span className="personal-roadmap-card-month">{monthLabel(item.month)}</span>
-                        <span className="personal-roadmap-status">{item.status}</span>
+                        <span className="personal-roadmap-status">
+                          {STATUS_LABELS[item.status] || item.status}
+                        </span>
                       </span>
                       <span className="personal-roadmap-card-phase">{index + 1}개월 차 · {phase.label}</span>
                       <strong className="personal-roadmap-card-title">{action.title}</strong>

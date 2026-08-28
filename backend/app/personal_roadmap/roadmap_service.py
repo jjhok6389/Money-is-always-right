@@ -19,7 +19,7 @@ from app.personal_roadmap.models import (
 from app.personal_roadmap.prioritizer import prioritize
 from app.personal_roadmap.repository import PersonalRoadmapRepository
 from app.personal_roadmap.roadmap_generator import add_months, generate_months
-from app.services import dashboard_service, firebase_service, transaction_pipeline
+from app.services import dashboard_service, firebase_service, holdings_pipeline, transaction_pipeline
 
 DashboardBuilder = Callable[
     [str, dict[str, Any] | None, DashboardRequest],
@@ -105,28 +105,35 @@ async def _build_calculation_only_dashboard(
         count=transaction_pipeline.DEFAULT_TRANSACTION_COUNT,
     )
     summary = pipeline.financialSummary
-    assets = dashboard_service._estimate_current_assets(
-        summary.monthlySavingsCapacity,
-        request.currentAssets,
+    holdings = holdings_pipeline.run_pipeline(
+        user_id=user_id,
+        as_of=f"{month}-01",
+        investment_propensity=request.profile.investmentPropensity,
     )
+    assets = holdings.totals.totalAssets
     consumption, totals = dashboard_service._build_consumption(pipeline)
     goal = dashboard_service._goal_progress(
         request.profile,
         assets,
         summary.monthlySavingsCapacity,
     )
+    debt_items = dashboard_service._debt_priorities(
+        holdings,
+        summary.monthlySavingsCapacity,
+    )
     return DashboardResponse(
         generatedAt=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         month=month,
-        portfolio=dashboard_service._build_portfolio(assets, request.profile.investmentPropensity),
+        portfolio=dashboard_service._build_portfolio(holdings),
         consumption=consumption,
         consumptionTotals=totals,
         financialSummary=summary,
+        holdings=holdings,
         goal=goal,
         roadmap=[],
         recommendedProducts=[],
         recommendedEtfs=[],
-        debtRepaymentPriority=[],
+        debtRepaymentPriority=debt_items,
         etfMessage="Dry Run에서는 상품 및 ETF 후보를 조회하지 않습니다.",
     )
 
@@ -147,15 +154,6 @@ async def generate_personal_roadmap(
     if profile is None:
         raise ValueError("온보딩 프로필 또는 목표금액·목표기간 입력이 필요합니다.")
 
-    stored_assets = stored.get("currentAssets") if stored else None
-    current_assets = request.currentAssets if request.currentAssets is not None else stored_assets
-    current_assets_estimated = current_assets is None
-
-    stored_debt = stored.get("debtBalance") if stored else None
-    debt_value = request.debtBalance if request.debtBalance is not None else stored_debt
-    debt_known = debt_value is not None
-    debt_balance = int(debt_value) if debt_value is not None else 0
-
     month = request.month or datetime.now(timezone.utc).strftime("%Y-%m")
     roadmap_repository = repository
     if not dry_run and roadmap_repository is None:
@@ -174,20 +172,44 @@ async def generate_personal_roadmap(
         raise ValueError("목표 월은 현재 기준 40년 이내여야 합니다.")
     dashboard_request = DashboardRequest(
         profile=profile,
-        currentAssets=int(current_assets) if current_assets is not None else None,
-        debtBalance=debt_balance,
         month=month,
     )
     builder = dashboard_builder or (
         _build_calculation_only_dashboard if dry_run else dashboard_service.build_dashboard
     )
     dashboard = await builder(user_id, stored, dashboard_request)
+
+    # Explicit request overrides win; then Demo/MyData holdings; else profile estimate.
+    stored_assets = stored.get("currentAssets") if stored else None
+    stored_debt = stored.get("debtBalance") if stored else None
+    if request.currentAssets is not None:
+        current_assets = int(request.currentAssets)
+        current_assets_estimated = False
+    elif dashboard.holdings is not None:
+        current_assets = int(dashboard.holdings.totals.totalAssets)
+        current_assets_estimated = False
+    else:
+        current_assets = int(stored_assets) if stored_assets is not None else None
+        current_assets_estimated = current_assets is None
+
+    if request.debtBalance is not None:
+        debt_balance = int(request.debtBalance)
+        debt_known = True
+    elif dashboard.holdings is not None:
+        debt_balance = int(dashboard.holdings.totals.totalLiabilities)
+        debt_known = True
+    else:
+        debt_value = stored_debt
+        debt_known = debt_value is not None
+        debt_balance = int(debt_value) if debt_value is not None else 0
+
     state = from_dashboard(
         dashboard,
         profile=profile,
         debt_balance=debt_balance,
         debt_balance_known=debt_known,
         current_assets_estimated=current_assets_estimated,
+        current_assets=current_assets,
     )
     gap = analyze_gap(state, horizon_months=remaining_months)
     months = generate_months(month, prioritize(build_candidates(state, gap)))

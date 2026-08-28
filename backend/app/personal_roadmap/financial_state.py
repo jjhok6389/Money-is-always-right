@@ -57,18 +57,25 @@ def from_dashboard(
     debt_balance: int,
     debt_balance_known: bool,
     current_assets_estimated: bool,
+    current_assets: int | None = None,
 ) -> RoadmapFinancialState:
     variable = [item for item in dashboard.consumption if item.expenseType == "variable"]
     top = max(variable, key=lambda item: item.amount, default=None)
+    assets = (
+        int(current_assets)
+        if current_assets is not None
+        else int(dashboard.goal.currentAssets)
+    )
+    asset_gap = max(int(profile.targetAssetAmount) - assets, 0)
     return RoadmapFinancialState(
         month=dashboard.month,
         profile=profile,
         summary=dashboard.financialSummary,
-        current_assets=dashboard.goal.currentAssets,
+        current_assets=assets,
         current_assets_estimated=current_assets_estimated,
         debt_balance=max(int(debt_balance), 0),
         debt_balance_known=debt_balance_known,
-        current_asset_gap=dashboard.goal.gapAmount,
+        current_asset_gap=asset_gap,
         goal_on_track=dashboard.goal.onTrack,
         recommended_products=tuple(dashboard.recommendedProducts),
         recommended_etfs=tuple(dashboard.recommendedEtfs),
