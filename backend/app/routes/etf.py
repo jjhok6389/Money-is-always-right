@@ -2,6 +2,8 @@
 ETF recommendation REST endpoints. Request path reads the ledger only.
 """
 
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.dependencies import get_current_user
@@ -35,6 +37,8 @@ async def sync_etf_ledger(current_user: dict = Depends(get_current_user)):
 async def get_etf_detail(
     symbol: str,
     propensity: str = Query(default="neutral"),
+    startDate: date | None = Query(default=None),
+    endDate: date | None = Query(default=None),
     current_user: dict = Depends(get_current_user),
 ):
     _ = current_user
@@ -48,4 +52,11 @@ async def get_etf_detail(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="지원 유니버스에 없는 ETF 코드입니다.",
         )
-    return await etf_recommendation.get_etf_detail(code, propensity)
+    if endDate and startDate and endDate < startDate:
+        raise HTTPException(status_code=400, detail="종료일은 시작일 이후여야 합니다.")
+    return await etf_recommendation.get_etf_detail(
+        code,
+        propensity,
+        startDate.isoformat() if startDate else None,
+        endDate.isoformat() if endDate else None,
+    )

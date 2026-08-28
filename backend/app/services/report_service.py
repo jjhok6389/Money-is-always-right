@@ -188,7 +188,6 @@ async def generate_report(user_id: str, request: GenerateReportRequest) -> Coach
     profile_payload = request.profile
     dash_req = DashboardRequest(
         profile=ProfileSnapshot(**profile_payload) if profile_payload else None,
-        currentAssets=request.currentAssets,
     )
     dashboard = await dashboard_service.build_dashboard(user_id, stored, dash_req)
     financial_summary = dashboard.financialSummary

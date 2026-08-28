@@ -160,6 +160,7 @@ export default function FloatingCoachChat() {
       <button
         type="button"
         className="coach-fab"
+        data-tour="coach-fab"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
       >

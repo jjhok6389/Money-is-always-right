@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_current_user
 from app.models.simulation import ProfileSimulationRequest, SimulationRequest, SimulationResponse
-from app.services import firebase_service, simulation_service, transaction_pipeline
+from app.services import firebase_service, holdings_pipeline, simulation_service, transaction_pipeline
 
 router = APIRouter()
 
@@ -40,15 +40,21 @@ def run_from_profile(
         user_id=uid,
         count=transaction_pipeline.DEFAULT_TRANSACTION_COUNT,
     )
+    holdings = holdings_pipeline.run_pipeline(
+        user_id=uid,
+        investment_propensity=(profile or {}).get("investmentPropensity"),
+    )
+    # Manual currentAssets override removed — Demo holdings (later MyData) are the source.
     baseline = simulation_service.assumptions_from_financial_summary(
         pipeline.financialSummary,
         profile,
-        payload.currentAssets,
+        holdings.totals.totalAssets,
     )
     scenario = baseline.model_copy(update=payload.scenario)
     request = SimulationRequest(
         baseline=baseline,
         scenario=scenario,
         label=payload.label or "맞춤 시나리오",
+        loans=simulation_service.loans_from_holdings(holdings.loans),
     )
     return simulation_service.run_simulation(request)

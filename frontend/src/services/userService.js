@@ -8,16 +8,22 @@ import { apiRequest } from './api';
 
 const USERS_COLLECTION = 'users';
 
+function omitUndefinedFields(record) {
+  return Object.fromEntries(
+    Object.entries(record).filter(([, value]) => value !== undefined),
+  );
+}
+
 export async function getUserProfile(uid) {
   const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
   return snap.exists() ? { uid, ...snap.data() } : null;
 }
 
 export async function saveUserProfile(uid, profile) {
-  const payload = {
+  const payload = omitUndefinedFields({
     ...profile,
     updatedAt: serverTimestamp(),
-  };
+  });
 
   await setDoc(doc(db, USERS_COLLECTION, uid), payload, { merge: true });
 
@@ -25,7 +31,7 @@ export async function saveUserProfile(uid, profile) {
   try {
     await apiRequest('/api/users/me', {
       method: 'PUT',
-      body: JSON.stringify(profile),
+      body: JSON.stringify(omitUndefinedFields(profile)),
     });
   } catch (error) {
     // Firestore remains source of truth for Phase 1 if backend is offline.

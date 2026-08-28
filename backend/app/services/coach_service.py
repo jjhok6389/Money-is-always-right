@@ -75,6 +75,7 @@ SYSTEM_PROMPT = """당신은 'Money is Always Right'의 청년 자산형성 AI �
 - 특정 ETF 종가·변동성 요약이 필요하면 get_etf_detail
 - ETF 개념·레버리지·NAV·추천 정책·면책은 search_etf_knowledge
 - '만약 ~하면' 같은 가정이 나오면 run_scenario_simulation
+- 과거 포트폴리오(예·적금·ETF 역사적 시뮬)는 앱 /simulation?mode=portfolio 탭을 안내하고, 수치는 프론트 계산임을 밝힙니다
 - 실행 순서·부채 상환 우선순위가 필요하면 get_roadmap
 - 우대조건·가입자격·정책상품·금융용어 설명이 필요하면 search_knowledge
 필요하면 여러 도구를 연달아 호출한 뒤 종합해서 답하세요.
@@ -302,7 +303,7 @@ def _format_state_reply(name_ko: str, result: dict[str, Any]) -> str:
     months = result.get("estimatedMonthsToGoal")
     when = result.get("estimatedAchievementDate")
     lines = [
-        f"{name_ko}님의 현재 추정 자산은 {result['currentAssets']:,}원이고, "
+        f"{name_ko}님의 현재 Demo 보유 자산은 {result['currentAssets']:,}원이고, "
         f"목표 {result['targetAssetAmount']:,}원까지 {result['gapAmount']:,}원이 남았어요 "
         f"(달성률 {result['achievementRate']}%).",
         f"월 저축 여력은 {result['monthlySavingsCapacity']:,}원으로 계산됩니다.",
@@ -311,7 +312,7 @@ def _format_state_reply(name_ko: str, result: dict[str, Any]) -> str:
         lines.append(f"이 속도라면 약 {months}개월 뒤인 {when or '-'}쯤 목표에 도달할 수 있어요.")
     else:
         lines.append("현재 저축 여력으로는 목표 도달 시점을 계산하기 어려워요. 지출부터 점검해 보세요.")
-    lines.append(f"※ 자산 금액은 {agent_tools.ASSET_ESTIMATE_BASIS}")
+    lines.append(f"※ 자산 금액은 {agent_tools.HOLDINGS_ASSET_BASIS}")
     return " ".join(lines)
 
 

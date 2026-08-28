@@ -85,7 +85,7 @@ export default function ReportsPage() {
               className="btn btn-primary"
               onClick={() => navigate('/coach-report')}
             >
-              새 초회 리포트
+              첫 리포트 만들기
             </button>
             <button
               type="button"
@@ -130,7 +130,7 @@ export default function ReportsPage() {
             {reports.map((item) => (
               <li key={item.reportId}>
                 <div>
-                  <strong>{item.type === 'monthly' ? '월간 비교' : '초회'} 리포트</strong>
+                  <strong>{item.type === 'monthly' ? '월간 비교' : '첫'} 리포트</strong>
                   <p className="muted">
                     {formatDate(item.createdAt)} · 여력{' '}
                     {Number(item.capacity || 0).toLocaleString('ko-KR')}원

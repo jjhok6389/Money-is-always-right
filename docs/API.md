@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |------|------|
-| Base URL (로컬) | `http://localhost:8000` |
+| Base URL (로컬) | `http://localhost:8000` (Vite 프록시·일부 dev 환경은 `8001` 사용 가능) |
 | 버전 | `0.5.0` |
 | 문서(Swagger) | http://localhost:8000/docs |
 | 인증 | Firebase ID Token (`Authorization: Bearer <token>`) |
@@ -345,13 +345,106 @@ Prefix: `/api/etf`
 | Method | Path | 설명 |
 |--------|------|------|
 | GET | `/api/etf/recommendations?propensity=` | 성향별 ETF 리스트. 안정형은 빈 배열, 안정추구는 초저 1~2개 |
-| GET | `/api/etf/{symbol}` | 상세 + 약 126영업일(6개월) 종가 시계열 + 추천 이유 |
+| GET | `/api/etf/{symbol}` | 상세 + 종가 시계열 + 배당 이벤트 + 추천 이유 |
 | POST | `/api/etf/sync` | KRX(또는 mock) 원장 갱신. 대시보드 요청 경로가 아님 |
+
+**`GET /api/etf/{symbol}` Query (선택)**
+
+| 이름 | 타입 | 설명 |
+|------|------|------|
+| `startDate` | string | `YYYY-MM-DD` — 과거 시뮬 시작일. 지정 시 yfinance 일별 시세 조회 |
+| `endDate` | string | `YYYY-MM-DD` — 종료일(기본: 오늘) |
+
+- `startDate`·`endDate`가 있으면 **yfinance** 일별 종가·배당을 우선 조회합니다(최대 3회 재시도).
+- yfinance 실패 시 Firestore/KRX에 저장된 시계열(`stored`)로 **fallback**하며 `source`는 `mock` 또는 `krx`로 반환됩니다.
+- Query 없이 호출하면 기존처럼 약 126영업일(6개월) `etfMetrics` 시계열을 반환합니다.
+
+**Response `source` 값:** `yfinance` | `krx` | `mock`
 
 - 요청 경로는 `etfMetrics`만 읽습니다. KRX는 sync 배치에서만 호출합니다.
 - 변동성 = 최근 약 126 영업일(6개월) 일간 수익률 표준편차 × √252 (연율화), UI 「6개월 변동성」
 - 버킷: 유니버스 상대 사분위 `ultra_low | low_mid | mid_high | high`
 - `KRX_AUTH_KEY` 없거나 401이면 `source=mock` (첫 401에서 즉시 중단)
+
+---
+
+## 5.5 Holdings — Demo 보유 원장 (잔액표)
+
+Prefix: `/api/holdings`
+
+거래(가계부)와 분리된 **계좌·대출·증권·보험** 스냅샷입니다. 대시보드 Gap·포트폴리오·부채 로드맵·시뮬레이션 시작 자산의 사용합니다. 향후 뱅크샐러드/마이데이터 어댑터로 교체 가능한 스키마입니다.
+
+### `GET /api/holdings/pipeline`
+
+**Query**
+
+| 이름 | 타입 | 기본 | 설명 |
+|------|------|------|------|
+| `asOf` | string | 당월 1일 | `YYYY-MM-DD` |
+
+**Response `200`**
+
+```json
+{
+  "userId": "firebaseUid",
+  "generatedAt": "2026-08-22T05:00:00Z",
+  "asOf": "2026-08-01",
+  "source": "mock",
+  "accounts": [
+    {
+      "id": "uid-acc-checking",
+      "institution": "카카오뱅크",
+      "accountName": "입출금 통장",
+      "accountType": "checking",
+      "balance": 1200000,
+      "rate": 0.1
+    }
+  ],
+  "loans": [
+    {
+      "id": "uid-loan-student",
+      "institution": "한국장학재단",
+      "loanName": "취업 후 상환 학자금",
+      "loanType": "student",
+      "balance": 8500000,
+      "interestRate": 2.9,
+      "monthlyPayment": 85000
+    }
+  ],
+  "investments": [
+    {
+      "id": "uid-inv-etf",
+      "broker": "키움증권",
+      "name": "KODEX 200",
+      "symbol": "069500",
+      "evalAmount": 800000
+    }
+  ],
+  "insurances": [
+    {
+      "id": "uid-ins-health",
+      "insurer": "삼성화재",
+      "productName": "실손의료보험",
+      "monthlyPremium": 95000,
+      "surrenderValue": 180000
+    }
+  ],
+  "totals": {
+    "cash": 1200000,
+    "deposit": 2000000,
+    "saving": 6300000,
+    "investment": 800000,
+    "insuranceSurrender": 180000,
+    "totalAssets": 10480000,
+    "totalLiabilities": 8500000,
+    "netWorth": 1980000
+  }
+}
+```
+
+### `POST /api/holdings/pipeline`
+
+시드·성향 지정 재생성. Body: `{ "asOf", "seed", "investmentPropensity" }`
 
 ---
 
@@ -379,9 +472,6 @@ Prefix: `/api/dashboard`
 {
   "profile": {
     "displayName": "홍길동",
-    "monthlyIncome": 3200000,
-    "fixedExpenses": 1500000,
-    "estimatedMonthlySavings": 700000,
     "investmentPropensity": "neutral",
     "targetAssetAmount": 50000000,
     "targetYears": 5,
@@ -389,8 +479,6 @@ Prefix: `/api/dashboard`
     "age": 28,
     "occupation": "직장인"
   },
-  "currentAssets": 5000000,
-  "debtBalance": 0,
   "month": "2026-08"
 }
 ```
@@ -398,9 +486,9 @@ Prefix: `/api/dashboard`
 | 필드 | 설명 |
 |------|------|
 | `profile` | 없으면 서버 저장 프로필 사용 |
-| `currentAssets` | 현재 자산(원). 없으면 저축여력×6개월 추정 |
-| `debtBalance` | 부채 잔액(원) |
-| `month` | 소비 파이프라인 기준월 `YYYY-MM` |
+| `month` | 소비·보유 파이프라인 기준월 `YYYY-MM` |
+
+자산·부채·포트폴리오는 `/api/holdings` Demo 보유 원장 합산으로 산출합니다 (수동 오버라이드 없음).
 
 **Response `200`**
 
@@ -409,8 +497,17 @@ Prefix: `/api/dashboard`
   "generatedAt": "2026-08-22T05:00:00Z",
   "month": "2026-08",
   "portfolio": [
-    { "key": "cash", "label": "현금·입출금", "amount": 1000000, "ratio": 0.2 }
+    { "key": "cash", "label": "현금·입출금", "amount": 1200000, "ratio": 0.12 }
   ],
+  "holdings": {
+    "source": "mock",
+    "asOf": "2026-08-01",
+    "totals": {
+      "totalAssets": 9800000,
+      "totalLiabilities": 8500000,
+      "netWorth": 1300000
+    }
+  },
   "consumption": [
     {
       "category": "food",
@@ -489,6 +586,16 @@ Prefix: `/api/simulation`
 
 월 적립액 = `(소득 − 지출) × 저축률(%)`  
 월복리로 자산 궤적을 투사하고, 기본 로드맵 vs 시나리오를 비교합니다.
+
+### 프론트 `/simulation` 페이지 (2탭)
+
+| 탭 | URL | 설명 |
+|----|-----|------|
+| 미래 시나리오 | `/simulation?mode=future` (기본) | `POST /api/simulation/from-profile` — 소득·지출·저축률 변경 시 미래 자산 궤적 비교 |
+| 과거 포트폴리오 | `/simulation?mode=portfolio` | 프론트 `portfolioSimulator.js` + `GET /api/etf/{symbol}?startDate=&endDate=` — 예·적금·ETF 과거 시뮬 |
+
+- 과거 탭 시작 자산: Demo `holdings.totals.totalAssets`가 기준(source of truth). 사용자가 직접 수정하면 `startingAssetsSource: manual`로 sessionStorage에 저장.
+- 과거 탭 ETF 시세: yfinance 성공 시 월말 종가 매수, 실패 시 stored/mock fallback(배너 표시).
 
 ### `POST /api/simulation/run`
 

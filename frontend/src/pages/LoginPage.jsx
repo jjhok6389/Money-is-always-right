@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { isProfileOnboarded, useAuth } from '../contexts/AuthContext';
 import { isFirebaseConfigured } from '../firebase/setupCheck';
 
 function mapAuthError(code) {
@@ -16,7 +16,7 @@ function mapAuthError(code) {
 }
 
 export default function LoginPage() {
-  const { signIn } = useAuth();
+  const { signIn, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
@@ -38,8 +38,9 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await signIn(form);
-      // ProtectedRoute sends incomplete profiles to /onboarding.
-      navigate('/');
+      const latest = await refreshProfile();
+      // First-time users only → onboarding; returning users → dashboard.
+      navigate(isProfileOnboarded(latest) ? '/' : '/onboarding');
     } catch (err) {
       setError(mapAuthError(err.code));
     } finally {

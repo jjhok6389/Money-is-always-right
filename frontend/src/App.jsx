@@ -2,7 +2,6 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './contexts/AuthContext';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import OnboardingPage from './pages/OnboardingPage';
 import ProductsPage from './pages/ProductsPage';
@@ -94,7 +93,6 @@ export default function App() {
       <Route element={<ProtectedRoute requireOnboarding />}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/dashboard" element={<Navigate to="/" replace />} />
-        <Route path="/home" element={<HomePage />} />
         <Route path="/simulation" element={<SimulationPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/products" element={<ProductsPage />} />

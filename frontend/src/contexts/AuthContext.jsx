@@ -6,6 +6,21 @@ import * as authService from '../services/authService';
 
 const AuthContext = createContext(null);
 
+/** True when onboarding finished (flag) or legacy complete profile without the flag. */
+export function isProfileOnboarded(profile) {
+  if (!profile) return false;
+  if (profile.onboardingCompleted) return true;
+  return Boolean(
+    profile.displayName &&
+      profile.age &&
+      profile.occupation &&
+      profile.investmentPropensity &&
+      profile.targetAssetAmount != null &&
+      profile.targetYears &&
+      profile.goalDescription,
+  );
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -13,14 +28,23 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Keep routes loading until profile is fetched; otherwise login briefly sees
+      // profile=null and dumps completed users onto /onboarding.
+      setLoading(true);
       setUser(firebaseUser);
-      if (firebaseUser) {
-        const data = await getUserProfile(firebaseUser.uid);
-        setProfile(data);
-      } else {
+      try {
+        if (firebaseUser) {
+          const data = await getUserProfile(firebaseUser.uid);
+          setProfile(data);
+        } else {
+          setProfile(null);
+        }
+      } catch (error) {
+        console.warn('Failed to load user profile:', error);
         setProfile(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return unsubscribe;
@@ -41,7 +65,7 @@ export function AuthProvider({ children }) {
       user,
       profile,
       loading,
-      isOnboarded: Boolean(profile?.onboardingCompleted),
+      isOnboarded: isProfileOnboarded(profile),
       signUp: authService.signUp,
       signIn: authService.signIn,
       resetPassword: authService.resetPassword,
