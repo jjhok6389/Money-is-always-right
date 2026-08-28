@@ -4,16 +4,23 @@ ETF recommendation from the persisted metrics ledger (no KRX on the request path
 
 from __future__ import annotations
 
+import asyncio
+import logging
+
 from app.models.etf import (
     EtfDetail,
     EtfDetailResponse,
+    EtfDividendPoint,
     EtfListResponse,
     EtfPricePoint,
     EtfSummary,
     RiskLevel,
 )
 from app.services import etf_store, krx_etf_client
+from app.services.etf_history import fetch_etf_history
 from app.services.etf_store import BUCKETS_BY_PROPENSITY, POLICY_KO
+
+logger = logging.getLogger(__name__)
 
 VALID_PROPENSITIES = {
     "stable",
@@ -153,7 +160,7 @@ async def recommend_etfs(propensity: str | None) -> EtfListResponse:
     )
 
 
-async def get_etf_detail(symbol: str, propensity: str | None = None) -> EtfDetailResponse:
+async def _get_stored_etf_detail(symbol: str, propensity: str | None) -> EtfDetailResponse:
     await etf_store.ensure_seeded()
     normalize_propensity(propensity)
     code = symbol.strip()
@@ -188,8 +195,42 @@ async def get_etf_detail(symbol: str, propensity: str | None = None) -> EtfDetai
         series = krx_etf_client.mock_series(code, row.get("name"))
     summary = _to_summary(row, percentiles, universe_size)
     detail = EtfDetail(**summary.model_dump(), series=_price_points(series.dates, series.closes))
-    return EtfDetailResponse(
-        source=row.get("source") or "mock",
-        etf=detail,
-        message=None,
+    return EtfDetailResponse(source=row.get("source") or "mock", etf=detail)
+
+
+async def get_etf_detail(
+    symbol: str,
+    propensity: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> EtfDetailResponse:
+    stored = await _get_stored_etf_detail(symbol, propensity)
+    if not start_date:
+        return stored
+    try:
+        history = await asyncio.to_thread(fetch_etf_history, symbol.strip(), start_date, end_date)
+    except Exception as exc:
+        logger.warning(
+            "yfinance history failed for %s (%s ~ %s): %s",
+            symbol.strip(),
+            start_date,
+            end_date or "today",
+            exc,
+        )
+        stored.message = "실시간 조회에 실패해 기존 저장 시계열을 사용했습니다. 배당 내역은 제공되지 않습니다."
+        return stored
+
+    stored.source = "yfinance"
+    stored.etf.series = [EtfPricePoint(**point) for point in history["prices"]]
+    stored.etf.dividends = [EtfDividendPoint(**point) for point in history["dividends"]]
+    stored.etf.asOfDate = history["asOfDate"]
+    stored.etf.lastPrice = stored.etf.series[-1].close
+    stored.message = None
+    logger.info(
+        "ETF detail %s uses yfinance (%s ~ %s, %d prices)",
+        symbol.strip(),
+        start_date,
+        end_date or "today",
+        len(stored.etf.series),
     )
+    return stored
