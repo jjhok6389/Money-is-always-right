@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 800 440"
+     width="100%"
+     role="img"
+     aria-label="청년가구 순자산 상위 20퍼센트와 하위 20퍼센트의 격차">
+
+  <style>
+
+    .ko { font-family: 'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo','Noto Sans KR',sans-serif; }
+
+    .title { font-size: 26px; font-weight: 700; fill: #1E3A5F; }
+
+    .axis { font-size: 20px; font-weight: 700; fill: #444C56; }
+
+    .sub { font-size: 18px; fill: #6B7684; }
+
+    .value { font-size: 24px; font-weight: 700; fill: #1E3A5F; }
+
+    .value-hi { font-size: 24px; font-weight: 700; fill: #C4501F; }
+
+    .cap { font-size: 18px; fill: #6B7684; }
+
+    .lead { font-size: 19px; font-weight: 700; fill: #1E3A5F; }
+
+    .leadsub { font-size: 15px; fill: #444C56; }
+
+  </style>
+
+  <rect x="0" y="0" width="800" height="440" fill="#FFFFFF"/>
+
+  <text class="ko title" x="40" y="46">
+    청년가구 순자산 격차 — 상위 20% vs 하위 20%
+  </text>
+
+  <text class="ko sub" x="40" y="72">
+    단위: 만 원
+  </text>
+
+
+  <!-- plot area baseline -->
+
+  <line x1="70" y1="352" x2="730" y2="352"
+        stroke="#C7CFD8" stroke-width="2"/>
+
+
+  <!-- 상위 20%: 93,022만 -> 240px -->
+
+  <rect x="180" y="112" width="140" height="240"
+        rx="4" fill="#2E7DD1"/>
+
+  <text class="ko value"
+        x="250" y="100"
+        text-anchor="middle">93,022</text>
+
+  <text class="ko axis"
+        x="250" y="378"
+        text-anchor="middle">상위 20%</text>
+
+
+  <!-- 하위 20%: 2,301만 -> 실제 비율 약 5.9px -->
+
+  <rect x="480" y="346" width="140" height="6"
+        rx="2" fill="#E8734A"/>
+
+  <text class="ko value-hi"
+        x="550" y="332"
+        text-anchor="middle">2,301</text>
+
+  <text class="ko axis"
+        x="550" y="378"
+        text-anchor="middle">하위 20%</text>
+
+
+  <!-- gap bracket -->
+
+  <line x1="350" y1="112" x2="350" y2="346"
+        stroke="#E8734A" stroke-width="2"/>
+
+  <line x1="340" y1="112" x2="360" y2="112"
+        stroke="#E8734A" stroke-width="2"/>
+
+  <line x1="340" y1="346" x2="360" y2="346"
+        stroke="#E8734A" stroke-width="2"/>
+
+  <rect x="375" y="206" width="120" height="46"
+        rx="23" fill="#E8734A"/>
+
+  <text class="ko"
+        x="435" y="237"
+        text-anchor="middle"
+        font-size="24"
+        font-weight="700"
+        fill="#FFFFFF">40.4배</text>
+
+
+  <!-- caption -->
+
+  <text class="ko cap" x="40" y="428">
+    자료: 가계금융복지조사 (청년가구 순자산 5분위 평균)
+  </text>
+
+</svg>

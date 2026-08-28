@@ -3,7 +3,7 @@
     .ko { font-family: 'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo','Noto Sans KR',sans-serif; }
     .title { font-size: 26px; font-weight: 700; fill: #1E3A5F; }
     .panel-title { font-size: 19px; font-weight: 700; fill: #1E3A5F; }
-    .axis { font-size: 15px; fill: #6B7684; }
+    .axis { font-size: 18px; font-weight: 700; fill: #1E3A5F; }
     .value { font-size: 20px; font-weight: 700; fill: #1E3A5F; }
     .value-hi { font-size: 20px; font-weight: 700; fill: #C4501F; }
     .note { font-size: 14px; fill: #6B7684; }
@@ -85,7 +85,7 @@
             width="92"
             height="45"
             rx="4"
-            fill="#ff2600"/>
+            fill="#ff0000"/>
 
       <!-- 값 -->
       <text class="ko value-hi"
@@ -117,7 +117,7 @@
             width="120" height="30"
             rx="15"
             fill="#FFFFFF"
-            stroke="#ff2600"
+            stroke="#ff0000"
             stroke-width="1.5"/>
 
       <text class="ko"
@@ -125,9 +125,9 @@
             text-anchor="middle"
             font-size="15"
             font-weight="700"
-            fill="#ff2600">+31.1%p</text>
+            fill="#ff0000">+31.1%p</text>
 
   <!-- caption -->
-  <text class="ko cap" x="40" y="426">자료: 2025년 가계금융복지조사(국가데이터처·한국은행·금융감독원), 2025년 3월 말 기준 · 가구주 연령 39세 이하</text>
+  <text class="ko cap" x="40" y="426">자료: 2025년 가계금융복지조사(국가데이터처·한국은행·금융감독원)</text>
   <text class="ko cap" x="40" y="450">※ 저축액 대비 금융부채비율은 전체가구 대응값을 함께 제시하지 않고 100% 기준선으로 비교</text>
 </svg>

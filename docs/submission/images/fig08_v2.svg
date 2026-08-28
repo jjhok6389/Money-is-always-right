@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="100%" role="img" aria-label="단기 중기 장기 서비스 확장 로드맵 타임라인">
+  <style>
+    .ko { font-family: 'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif; }
+    .title { font-size: 26px; font-weight: 900; fill: #1E3A5F; }
+    .sub { font-size: 15px; fill: #6B7684; }
+    .phase { font-size: 20px; font-weight: 700; fill: #FFFFFF; }
+    .item-t { font-size: 18px; font-weight: 700; fill: #1E3A5F; }
+    .item-d { font-size: 14px; fill: #444C56; }
+    .mark { font-size: 16px; font-weight: 700; fill: #C4501F; }
+    .now { font-size: 16px; font-weight: 700; fill: #1E3A5F; }
+  </style>
+
+  <rect x="0" y="0" width="1200" height="520" fill="#FFFFFF"/>
+
+  <text class="ko title" x="40" y="80">서비스 확장 로드맵 — 단기 · 중기 · 장기</text>
+
+  <!-- MVP marker -->
+  <circle cx="66" cy="140" r="11" fill="#1E3A5F"/>
+  <text class="ko now" x="88" y="146">MVP (현재)</text>
+
+  <!-- timeline axis -->
+  <line x1="66" y1="180" x2="1160" y2="180" stroke="#D7DFE8" stroke-width="4"/>
+
+  <!-- phase bars -->
+  <rect x="66" y="164" width="340" height="32" rx="16" fill="#2E7DD1"/>
+  <text class="ko phase" x="236" y="187" text-anchor="middle">단기</text>
+
+  <rect x="418" y="164" width="360" height="32" rx="16" fill="#2A6199"/>
+  <text class="ko phase" x="598" y="187" text-anchor="middle">중기</text>
+
+  <rect x="790" y="164" width="370" height="32" rx="16" fill="#1E3A5F"/>
+  <text class="ko phase" x="975" y="187" text-anchor="middle">장기</text>
+
+  <!-- milestone diamonds -->
+  <path d="M 412,128 L 424,140 L 412,152 L 400,140 Z" fill="#E8734A"/>
+  <text class="ko mark" x="486" y="146" text-anchor="middle">실데이터 연동</text>
+  <path d="M 784,128 L 796,140 L 784,152 L 772,140 Z" fill="#E8734A"/>
+  <text class="ko mark" x="842" y="146" text-anchor="middle">B2B 연계</text>
+
+  <!-- ===== 단기 ===== -->
+  <rect x="66" y="222" width="340" height="76" rx="10" fill="#F2F5F9" stroke="#D7DFE8" stroke-width="1.5"/>
+  <text class="ko item-t" x="88" y="252">월간 코칭 리포트 고도화</text>
+  <text class="ko item-d" x="88" y="278">리포트 자동 생성 스케줄링 및 발송 연동</text>
+
+  <rect x="66" y="310" width="340" height="76" rx="10" fill="#F2F5F9" stroke="#D7DFE8" stroke-width="1.5"/>
+  <text class="ko item-t" x="88" y="340">리포트 알림 기능</text>
+  <text class="ko item-d" x="88" y="366">월간 분석 결과와 금융행동 변화 알림 발송</text>
+
+  <rect x="66" y="398" width="340" height="76" rx="10" fill="#F2F5F9" stroke="#D7DFE8" stroke-width="1.5"/>
+  <text class="ko item-t" x="88" y="428">정책금융·상품 데이터 확대</text>
+  <text class="ko item-d" x="88" y="454">청년 정책금융, 예·적금, 투자상품 범위 확대</text>
+
+  <!-- ===== 중기 ===== -->
+  <rect x="418" y="222" width="360" height="76" rx="10" fill="#EAF1F8" stroke="#B9CBDD" stroke-width="1.5"/>
+  <text class="ko item-t" x="440" y="252">실데이터 연동</text>
+  <text class="ko item-d" x="440" y="278">마이데이터·오픈뱅킹 API 기반 실계좌 분석</text>
+
+  <rect x="418" y="310" width="360" height="76" rx="10" fill="#EAF1F8" stroke="#B9CBDD" stroke-width="1.5"/>
+  <text class="ko item-t" x="440" y="340">시나리오 영속화</text>
+  <text class="ko item-d" x="440" y="366">What-if 시나리오 저장 및 다중 비교</text>
+
+  <rect x="418" y="398" width="360" height="76" rx="10" fill="#EAF1F8" stroke="#B9CBDD" stroke-width="1.5"/>
+  <text class="ko item-t" x="440" y="428">개인화 코칭 고도화</text>
+  <text class="ko item-d" x="440" y="454">과거 행동·리포트 변화 반영한 개선 전략</text>
+
+  <!-- ===== 장기 ===== -->
+  <rect x="790" y="222" width="370" height="76" rx="10" fill="#E2E9F1" stroke="#9FB4C9" stroke-width="1.5"/>
+  <text class="ko item-t" x="812" y="252">금융기관 B2B 연계</text>
+  <text class="ko item-d" x="812" y="278">고객 상담·상품 추천·자산관리에 코칭 기능 제공</text>
+
+  <rect x="790" y="310" width="370" height="76" rx="10" fill="#E2E9F1" stroke="#9FB4C9" stroke-width="1.5"/>
+  <text class="ko item-t" x="812" y="340">생애주기 서비스 확대</text>
+  <text class="ko item-d" x="812" y="366">주택 마련·결혼·출산·은퇴 목표별 자산관리</text>
+
+  <rect x="790" y="398" width="370" height="76" rx="10" fill="#FFFFFF" stroke="#E8734A" stroke-width="2" stroke-dasharray="6 4"/>
+  <text class="ko item-t" x="812" y="428" fill="#C4501F">금융 외 영역 확장</text>
+  <text class="ko item-d" x="812" y="454">소상공인 자금관리·기업 재무 웰빙·은퇴자산 진단</text>
+</svg>
