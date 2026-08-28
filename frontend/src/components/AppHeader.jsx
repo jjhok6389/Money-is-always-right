@@ -16,16 +16,6 @@ const NAV_ITEMS = [
     ),
   },
   {
-    to: '/reports',
-    label: '리포트',
-    icon: (
-      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <path d="M14 2v6h6M8 13h8M8 17h5" />
-      </svg>
-    ),
-  },
-  {
     to: '/simulation',
     label: '시뮬레이션',
     icon: (
@@ -88,7 +78,7 @@ function NavLinks({ location, user, isOnboarded }) {
   return (
     <>
       {user && isOnboarded && (
-        <ul className="nav-list" role="list">
+        <ul className="nav-list" role="list" data-tour="nav">
           {NAV_ITEMS.map((item) => (
             <li key={item.to}>
               <Link

@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from app.models.user import InvestmentPropensity
 from app.models.etf import EtfSummary
+from app.models.holdings import HoldingsSnapshot
 from app.models.transaction import FinancialSummary
 
 
@@ -26,10 +27,11 @@ class ProfileSnapshot(BaseModel):
 
 
 class DashboardRequest(BaseModel):
-    """Optional overrides so the UI can compute even if backend profile sync lagged."""
+    """Optional profile snapshot so the UI can compute even if backend sync lagged.
+
+    Assets/debt come from holdings Demo (or later MyData), not request overrides.
+    """
     profile: Optional[ProfileSnapshot] = None
-    currentAssets: Optional[int] = Field(default=None, ge=0)
-    debtBalance: Optional[int] = Field(default=None, ge=0)
     month: Optional[str] = Field(default=None, pattern=r"^\d{4}-\d{2}$")
 
 
@@ -83,6 +85,7 @@ class DashboardResponse(BaseModel):
     consumption: list[ConsumptionBar]
     consumptionTotals: dict
     financialSummary: FinancialSummary
+    holdings: HoldingsSnapshot
     goal: GoalProgress
     roadmap: list[RoadmapItem]
     recommendedProducts: list[RecommendedProduct]

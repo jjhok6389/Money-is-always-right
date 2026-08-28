@@ -70,7 +70,7 @@ export default function TransactionsPage() {
       <AppHeader />
       <main className="page-content page-content-xl">
         <section className="hero-panel">
-          <p className="eyebrow">Phase 2 · 데이터 관리</p>
+          <p className="eyebrow">데이터 관리</p>
           <h1>소비 거래 분류</h1>
           <p className="lead">
             Demo 거래를 생성하고 소득·생활비·변동 소비·저축 이체로 자동 분류합니다.

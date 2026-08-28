@@ -22,6 +22,7 @@ from app.models.transaction import (
     Transaction,
     TransactionPipelineResult,
 )
+from app.services import holdings_pipeline
 
 DEFAULT_TRANSACTION_COUNT = 45
 
@@ -139,6 +140,34 @@ def _month_days(month: str) -> int:
     return (next_month - datetime(year, mon, 1)).days
 
 
+def _loan_repayment_anchors(
+    user_id: str,
+    month: str,
+    seed: int | None,
+) -> list[tuple[str, int, int]]:
+    """Mirror holdings Demo loans as monthly repayment cash-flow rows."""
+    holdings = holdings_pipeline.run_pipeline(
+        user_id=user_id,
+        as_of=f"{month}-01",
+        seed=seed,
+    )
+    anchors: list[tuple[str, int, int]] = []
+    day = 15
+    for loan in holdings.loans:
+        payment = int(loan.monthlyPayment or 0)
+        if payment <= 0:
+            continue
+        if loan.loanType == "student":
+            label = "학자금 대출 원리금 상환"
+        elif loan.loanType == "credit":
+            label = "신용대출 원리금 상환"
+        else:
+            label = f"{loan.loanName} 원리금 상환"
+        anchors.append((label, payment, day))
+        day = min(day + 1, 28)
+    return anchors
+
+
 def generate_raw_transactions(user_id: str, month: str, count: int, seed: int | None) -> list[dict[str, Any]]:
     """Create mocked ledger rows before classification."""
     rng = random.Random(_seed_for(user_id, month, seed))
@@ -155,6 +184,7 @@ def generate_raw_transactions(user_id: str, month: str, count: int, seed: int | 
         ("건강보험료 자동이체", 95_000, 8),
         ("청약저축 자동이체", 200_000, 10),
         ("넷플릭스 구독", 17_000, 12),
+        *_loan_repayment_anchors(user_id, month, seed),
     ]
     for merchant, amount, day in anchors:
         rows.append(

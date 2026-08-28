@@ -25,7 +25,7 @@ export default function EtfVolatilityChart({ series }) {
     <div className="chart-box chart-box-lg">
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#d5e0db" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#dce3ee" />
           <XAxis dataKey="date" tick={{ fontSize: 11 }} minTickGap={24} />
           <YAxis
             domain={['auto', 'auto']}
@@ -40,7 +40,7 @@ export default function EtfVolatilityChart({ series }) {
             type="monotone"
             dataKey="close"
             name="종가"
-            stroke="#0f766e"
+            stroke="#1b3a5f"
             strokeWidth={2.5}
             dot={false}
           />

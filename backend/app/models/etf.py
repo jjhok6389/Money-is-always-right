@@ -16,6 +16,11 @@ class EtfPricePoint(BaseModel):
     close: float
 
 
+class EtfDividendPoint(BaseModel):
+    date: str
+    amount: float = Field(description="Cash distribution per share")
+
+
 class EtfSummary(BaseModel):
     symbol: str
     name: str
@@ -41,6 +46,7 @@ class EtfSummary(BaseModel):
 
 class EtfDetail(EtfSummary):
     series: list[EtfPricePoint] = Field(default_factory=list)
+    dividends: list[EtfDividendPoint] = Field(default_factory=list)
     disclaimer: str = "투자 권유 아님 · 과거 데이터 기반. 과거 변동 ≠ 미래 수익."
 
 
@@ -53,7 +59,7 @@ class EtfListResponse(BaseModel):
 
 
 class EtfDetailResponse(BaseModel):
-    source: Literal["krx", "mock"]
+    source: Literal["yfinance", "krx", "mock"]
     etf: EtfDetail
     message: Optional[str] = None
 

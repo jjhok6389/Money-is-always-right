@@ -14,6 +14,8 @@ is returned so frontend/dev work can continue without credentials.
 
 from __future__ import annotations
 
+import asyncio
+import time
 from typing import Any, Literal
 
 import httpx
@@ -35,6 +37,11 @@ DEFAULT_GROUP_BY_TYPE = {
     "saving": "020000",
     "annuity": "050000",
 }
+
+# Shared catalog cache — FSS product lists are not user-specific.
+_CACHE_TTL_SECONDS = 600.0
+_product_cache: dict[tuple[str, str, int], tuple[float, ProductListResponse]] = {}
+_cache_locks: dict[tuple[str, str, int], asyncio.Lock] = {}
 
 
 def _to_float(value: Any) -> float | None:
@@ -194,13 +201,12 @@ def _mock_products(product_type: ProductType) -> list[FinancialProduct]:
     return products
 
 
-async def fetch_products(
+async def _fetch_products_uncached(
     product_type: ProductType,
-    top_fin_grp_no: str | None = None,
-    page_no: int = 1,
+    group: str,
+    page_no: int,
 ) -> ProductListResponse:
     settings = get_settings()
-    group = top_fin_grp_no or DEFAULT_GROUP_BY_TYPE.get(product_type) or settings.fss_top_fin_grp_no
 
     if not settings.fss_api_key:
         products = _mock_products(product_type)
@@ -251,3 +257,44 @@ async def fetch_products(
         products=products,
         message=None,
     )
+
+
+def _cache_lock(key: tuple[str, str, int]) -> asyncio.Lock:
+    lock = _cache_locks.get(key)
+    if lock is None:
+        lock = asyncio.Lock()
+        _cache_locks[key] = lock
+    return lock
+
+
+def clear_product_cache() -> None:
+    """Test helper: drop in-memory FSS product cache."""
+    _product_cache.clear()
+
+
+async def fetch_products(
+    product_type: ProductType,
+    top_fin_grp_no: str | None = None,
+    page_no: int = 1,
+) -> ProductListResponse:
+    settings = get_settings()
+    group = top_fin_grp_no or DEFAULT_GROUP_BY_TYPE.get(product_type) or settings.fss_top_fin_grp_no
+    cache_key = (product_type, group, page_no)
+
+    cached = _product_cache.get(cache_key)
+    if cached is not None:
+        expires_at, payload = cached
+        if time.monotonic() < expires_at:
+            return payload
+
+    async with _cache_lock(cache_key):
+        cached = _product_cache.get(cache_key)
+        if cached is not None:
+            expires_at, payload = cached
+            if time.monotonic() < expires_at:
+                return payload
+
+        payload = await _fetch_products_uncached(product_type, group, page_no)
+        # Cache successful FSS and mock fallbacks alike — avoids hammering on repeated errors.
+        _product_cache[cache_key] = (time.monotonic() + _CACHE_TTL_SECONDS, payload)
+        return payload

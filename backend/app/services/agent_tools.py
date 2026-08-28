@@ -37,10 +37,11 @@ TOOL_LABELS = {
     "get_etf_detail": "ETF 상세 조회",
     "search_etf_knowledge": "ETF 지식 검색",
     "search_knowledge": "금융지식 검색",
+    "summarize_portfolio_simulation": "과거 포트폴리오 시뮬 안내",
 }
 
-# Onboarding does not collect assets/debt yet, so the dashboard estimates them.
-ASSET_ESTIMATE_BASIS = "온보딩에 자산 입력 항목이 없어 월 저축 여력 기준으로 추정한 값입니다."
+# Assets/debt come from holdings Demo (later MyData), not onboarding estimates.
+HOLDINGS_ASSET_BASIS = "Demo 보유 원장(계좌·투자·보험해지환급) 합산 기준입니다. 향후 마이데이터로 교체됩니다."
 
 
 @dataclass
@@ -88,8 +89,11 @@ async def _get_financial_state(_params: dict[str, Any], ctx: AgentContext) -> di
     return {
         "month": data.month,
         "currentAssets": goal.currentAssets,
-        "assetsEstimated": True,
-        "assetsEstimateBasis": ASSET_ESTIMATE_BASIS,
+        "assetsEstimated": False,
+        "assetsSource": data.holdings.source,
+        "assetsBasis": HOLDINGS_ASSET_BASIS,
+        "totalLiabilities": data.holdings.totals.totalLiabilities,
+        "netWorth": data.holdings.totals.netWorth,
         "targetAssetAmount": goal.targetAssetAmount,
         "gapAmount": goal.gapAmount,
         "achievementRate": goal.achievementRate,
@@ -308,6 +312,19 @@ async def _search_knowledge(params: dict[str, Any], ctx: AgentContext) -> dict[s
     }
 
 
+async def _summarize_portfolio_simulation(params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
+    """Stub: 과거 포트폴리오 시뮬은 프론트 /simulation?mode=portfolio 에서 계산."""
+    return {
+        "uiPath": "/simulation?mode=portfolio",
+        "message": (
+            "과거 포트폴리오 시뮬레이션은 앱의 「시뮬레이션 → 과거 포트폴리오」 탭에서 "
+            "예·적금·ETF 과거 시세로 계산합니다. 미래 시나리오와 달리 백엔드 API가 아닌 "
+            "브라우저에서 portfolioSimulator로 산출됩니다."
+        ),
+        "disclaimer": "과거 데이터 기반이며 미래 수익을 예측하지 않습니다.",
+    }
+
+
 _HANDLERS: dict[str, Callable[[dict[str, Any], AgentContext], Awaitable[dict[str, Any]]]] = {
     "get_financial_state": _get_financial_state,
     "search_products": _search_products,
@@ -317,6 +334,7 @@ _HANDLERS: dict[str, Callable[[dict[str, Any], AgentContext], Awaitable[dict[str
     "get_etf_detail": _get_etf_detail,
     "search_etf_knowledge": _search_etf_knowledge,
     "search_knowledge": _search_knowledge,
+    "summarize_portfolio_simulation": _summarize_portfolio_simulation,
 }
 
 
@@ -328,7 +346,7 @@ TOOL_SPECS: list[dict[str, Any]] = [
             "name": "get_financial_state",
             "description": (
                 "사용자의 현재 금융상태를 조회한다. 자산 구성, 목표 자산 대비 부족액과 달성률, "
-                "월 저축 여력, 이번 달 소비 요약을 반환한다. 자산 금액은 추정값이다."
+                "월 저축 여력, 이번 달 소비 요약을 반환한다. 자산·부채는 Demo 보유 원장 합산이다."
             ),
             "inputSchema": {"json": {"type": "object", "properties": {}}},
         }
@@ -495,7 +513,7 @@ def summarize(name: str, result: dict[str, Any]) -> str:
 
     if name == "get_financial_state":
         return (
-            f"추정 자산 {result['currentAssets']:,}원 · 달성률 {result['achievementRate']}% · "
+            f"Demo 보유 자산 {result['currentAssets']:,}원 · 달성률 {result['achievementRate']}% · "
             f"월 저축여력 {result['monthlySavingsCapacity']:,}원"
         )
     if name == "search_products":
@@ -526,4 +544,6 @@ def summarize(name: str, result: dict[str, Any]) -> str:
         )
         note = "" if result["bestConfidence"] == "high" else ", 신뢰도 낮음"
         return f"{scope} 문서 {result['count']}건 ({mode}{note})"
+    if name == "summarize_portfolio_simulation":
+        return result.get("message", "과거 포트폴리오 시뮬 안내")
     return "완료"
