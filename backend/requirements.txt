@@ -8,3 +8,4 @@ httpx==0.28.1
 boto3==1.43.79
 apscheduler==3.11.3
 tzdata>=2024.1
+yfinance==1.7.0

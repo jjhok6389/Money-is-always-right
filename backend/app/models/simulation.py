@@ -7,6 +7,14 @@ from typing import Any, Optional
 from pydantic import BaseModel, Field
 
 
+class SimulatedLoan(BaseModel):
+    balance: int = Field(ge=0)
+    interestRate: float = Field(ge=0)
+    monthlyPayment: Optional[int] = Field(default=None, ge=0)
+    institution: Optional[str] = None
+    loanName: Optional[str] = None
+
+
 class SimulationAssumptions(BaseModel):
     monthlyIncome: int = Field(ge=0)
     monthlyExpenses: int = Field(ge=0)
@@ -21,6 +29,7 @@ class SimulationRequest(BaseModel):
     baseline: SimulationAssumptions
     scenario: SimulationAssumptions
     label: Optional[str] = "맞춤 시나리오"
+    loans: list[SimulatedLoan] = Field(default_factory=list)
 
 
 class TrajectoryPoint(BaseModel):
@@ -29,6 +38,10 @@ class TrajectoryPoint(BaseModel):
     baselineAssets: int
     scenarioAssets: int
     targetAssetAmount: int
+    baselineDebtBalance: int = 0
+    scenarioDebtBalance: int = 0
+    baselineNetWorth: int = 0
+    scenarioNetWorth: int = 0
 
 
 class ScenarioSummary(BaseModel):
@@ -37,6 +50,10 @@ class ScenarioSummary(BaseModel):
     targetHitMonth: Optional[int]
     targetHitLabel: Optional[str]
     surplusVsBaseline: int
+    monthlyDebtPayment: int = 0
+    finalDebtBalance: int = 0
+    debtFreeMonth: Optional[int] = None
+    monthlyInvestable: int = 0
 
 
 class SimulationResponse(BaseModel):
@@ -50,5 +67,6 @@ class SimulationResponse(BaseModel):
 class ProfileSimulationRequest(BaseModel):
     profile: Optional[dict[str, Any]] = None
     scenario: dict[str, Any] = Field(default_factory=dict)
+    # Legacy field — ignored. Starting assets come from holdings Demo.
     currentAssets: Optional[int] = Field(default=None, ge=0)
     label: Optional[str] = "맞춤 시나리오"
