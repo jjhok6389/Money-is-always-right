@@ -3,23 +3,9 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { getUserProfile } from '../services/userService';
 import * as authService from '../services/authService';
+import { isProfileOnboarded } from '../utils/authFlow';
 
 const AuthContext = createContext(null);
-
-/** True when onboarding finished (flag) or legacy complete profile without the flag. */
-export function isProfileOnboarded(profile) {
-  if (!profile) return false;
-  if (profile.onboardingCompleted) return true;
-  return Boolean(
-    profile.displayName &&
-      profile.age &&
-      profile.occupation &&
-      profile.investmentPropensity &&
-      profile.targetAssetAmount != null &&
-      profile.targetYears &&
-      profile.goalDescription,
-  );
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

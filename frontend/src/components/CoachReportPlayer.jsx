@@ -420,7 +420,11 @@ function buildScenes(report) {
   return scenes;
 }
 
-export default function CoachReportPlayer({ report }) {
+export default function CoachReportPlayer({
+  report,
+  onDashboardStart,
+  dashboardStartPending = false,
+}) {
   const scenes = useMemo(() => buildScenes(report), [report]);
   const [index, setIndex] = useState(0);
   const [sceneRun, setSceneRun] = useState(0);
@@ -645,12 +649,26 @@ export default function CoachReportPlayer({ report }) {
         return (
           <div className="report-done">
             <p className="report-reveal" style={revealStyle(2)}>이 보고서는 리포트 보관함에 저장되어 언제든 다시 볼 수 있습니다.</p>
-            <Link to="/dashboard" className="btn btn-primary report-reveal" style={revealStyle(3)}>
-              내 금융 대시보드 시작하기
-            </Link>
-            <Link to="/reports" className="btn btn-ghost report-reveal" style={revealStyle(4)}>
-              리포트 목록 보기
-            </Link>
+            {onDashboardStart ? (
+              <button
+                type="button"
+                className="btn btn-primary report-reveal"
+                style={revealStyle(3)}
+                disabled={dashboardStartPending}
+                onClick={onDashboardStart}
+              >
+                {dashboardStartPending ? '완료 상태 저장 중...' : '내 금융생활 시작하기'}
+              </button>
+            ) : (
+              <Link to="/dashboard" className="btn btn-primary report-reveal" style={revealStyle(3)}>
+                내 금융생활 시작하기
+              </Link>
+            )}
+            {!onDashboardStart && (
+              <Link to="/reports" className="btn btn-ghost report-reveal" style={revealStyle(4)}>
+                리포트 목록 보기
+              </Link>
+            )}
           </div>
         );
       default:
@@ -709,9 +727,21 @@ export default function CoachReportPlayer({ report }) {
             <span aria-hidden="true">→</span>
           </button>
         ) : (
-          <Link to="/dashboard" className="report-arrow" aria-label="대시보드로 이동">
-            <span aria-hidden="true">→</span>
-          </Link>
+          onDashboardStart ? (
+            <button
+              type="button"
+              className="report-arrow"
+              aria-label="내 금융생활로 이동"
+              disabled={dashboardStartPending}
+              onClick={onDashboardStart}
+            >
+              <span aria-hidden="true">→</span>
+            </button>
+          ) : (
+            <Link to="/dashboard" className="report-arrow" aria-label="대시보드로 이동">
+              <span aria-hidden="true">→</span>
+            </Link>
+          )
         )}
       </div>}
     </section>

@@ -27,8 +27,11 @@ export default function CoachReportStartPage() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const isFirstReportOnboarding =
+    searchParams.get('onboarding') === '1' && profile?.firstReportCompleted === false;
   const [error, setError] = useState('');
-  const [starting, setStarting] = useState(true);
+  const [starting, setStarting] = useState(!isFirstReportOnboarding);
+  const [hasStarted, setHasStarted] = useState(!isFirstReportOnboarding);
   const type = searchParams.get('type') === 'monthly' ? 'monthly' : 'initial';
   const lockKey = `${profile?.uid || 'anon'}:${type}`;
 
@@ -47,7 +50,8 @@ export default function CoachReportStartPage() {
         inflight.set(lockKey, promise);
       }
       const data = await promise;
-      navigate(`/reports/play/${data.reportId}`, { replace: true });
+      const onboardingQuery = isFirstReportOnboarding ? '?onboarding=1' : '';
+      navigate(`/reports/play/${data.reportId}${onboardingQuery}`, { replace: true });
     } catch (err) {
       setError(err.message || '리포트 생성에 실패했습니다.');
       setStarting(false);
@@ -55,13 +59,40 @@ export default function CoachReportStartPage() {
   };
 
   useEffect(() => {
-    runGenerate();
+    if (hasStarted) runGenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lockKey]);
+  }, [lockKey, hasStarted]);
+
+  if (isFirstReportOnboarding && !hasStarted) {
+    return (
+      <div className="page-shell report-shell">
+        <main className="page-content page-content-report">
+          <section className="first-report-intro">
+            <p className="eyebrow">가입 완료 · 첫 금융 진단</p>
+            <div className="first-report-intro-mark" aria-hidden="true">✓</div>
+            <h1>회원가입이 완료되었습니다!</h1>
+            <p className="lead">
+              입력한 정보와 연결된 Demo 금융 데이터를 바탕으로 현재 자산 상태를 분석해볼게요.
+            </p>
+            <p className="muted">
+              리포트와 대시보드는 동일한 사용자 금융 데이터를 사용합니다.
+            </p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setHasStarted(true)}
+            >
+              나의 첫 금융 리포트 보기
+            </button>
+          </section>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="page-shell report-shell">
-      <AppHeader />
+      {!isFirstReportOnboarding && <AppHeader />}
       <main className="page-content page-content-report">
         <section className="report-loading" role="status" aria-live="polite">
           <p className="eyebrow">금융 코치</p>

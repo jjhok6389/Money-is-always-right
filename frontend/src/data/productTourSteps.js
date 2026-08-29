@@ -2,7 +2,7 @@
 export const PRODUCT_TOUR_STEPS = [
   {
     id: 'welcome',
-    title: '맞춤 대시보드에 오신 걸 환영해요',
+    title: '내 금융생활에 오신 걸 환영해요',
     body: '목표·소비·추천을 한곳에서 볼 수 있어요. 핵심만 짧게 안내할게요.',
     target: null,
   },

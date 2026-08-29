@@ -155,7 +155,7 @@ export default function DashboardPage() {
       <main className="page-content page-content-xl">
         <section className="hero-panel hero-panel-with-action">
           <div className="hero-panel-copy">
-            <p className="eyebrow">맞춤 대시보드</p>
+            <p className="eyebrow">맞춤 금융 서비스</p>
             <h1>자산 · 소비 · 목표 로드맵</h1>
             <p className="lead">
               포트폴리오와 월간 소비를 시각화하고, 

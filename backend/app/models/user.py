@@ -39,6 +39,8 @@ class UserProfileUpdate(BaseModel):
     financialDataLinked: Optional[bool] = None
     financialDataLinkedAt: Optional[str] = None
     financialDataSource: Optional[str] = None
+    # False only during the first-report onboarding flow. Missing keeps legacy users unchanged.
+    firstReportCompleted: Optional[bool] = None
     createdAt: Optional[str] = None
 
 

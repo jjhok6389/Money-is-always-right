@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import CoachReportPlayer from '../components/CoachReportPlayer';
 import { useAuth } from '../contexts/AuthContext';
 import { getReport } from '../services/reportService';
+import { saveUserProfile } from '../services/userService';
 
 export default function CoachReportPlayPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { user, profile, refreshProfile } = useAuth();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [finishing, setFinishing] = useState(false);
+  const [finishError, setFinishError] = useState('');
+  const isFirstReportOnboarding =
+    searchParams.get('onboarding') === '1' && profile?.firstReportCompleted === false;
 
   useEffect(() => {
     let cancelled = false;
@@ -41,9 +47,47 @@ export default function CoachReportPlayPage() {
     };
   }, [reportId, navigate]);
 
+  const startDashboard = async () => {
+    if (!isFirstReportOnboarding) {
+      navigate('/dashboard');
+      return;
+    }
+
+    setFinishing(true);
+    setFinishError('');
+    try {
+      await saveUserProfile(user.uid, {
+        email: profile?.email || user.email,
+        displayName: profile?.displayName || user.displayName || '회원',
+        age: Number(profile?.age),
+        occupation: profile?.occupation,
+        investmentPropensity: profile?.investmentPropensity || 'neutral',
+        targetAssetAmount: Number(profile?.targetAssetAmount),
+        targetYears: Number(profile?.targetYears),
+        goalDescription: profile?.goalDescription,
+        onboardingCompleted: true,
+        financialDataLinked: profile?.financialDataLinked ?? true,
+        ...(profile?.financialDataLinkedAt != null
+          ? { financialDataLinkedAt: profile.financialDataLinkedAt }
+          : {}),
+        ...(profile?.financialDataSource != null
+          ? { financialDataSource: profile.financialDataSource }
+          : {}),
+        firstReportCompleted: true,
+        ...(typeof profile?.createdAt === 'string' ? { createdAt: profile.createdAt } : {}),
+      });
+      await refreshProfile();
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      setFinishError(err.message || '첫 리포트 완료 상태를 저장하지 못했습니다.');
+    } finally {
+      setFinishing(false);
+    }
+  };
+
   return (
     <div className="page-shell report-shell">
-      <AppHeader />
+      {!isFirstReportOnboarding && <AppHeader />}
       <main className="page-content page-content-report">
         {loading && (
           <section className="report-loading" role="status" aria-live="polite">
@@ -61,7 +105,16 @@ export default function CoachReportPlayPage() {
             </button>
           </section>
         )}
-        {!loading && !error && report && <CoachReportPlayer report={report} />}
+        {!loading && !error && report && (
+          <>
+            {finishError && <p className="alert alert-error" role="alert">{finishError}</p>}
+            <CoachReportPlayer
+              report={report}
+              onDashboardStart={isFirstReportOnboarding ? startDashboard : undefined}
+              dashboardStartPending={finishing}
+            />
+          </>
+        )}
       </main>
     </div>
   );

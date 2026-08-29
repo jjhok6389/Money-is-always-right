@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './contexts/AuthContext';
+import { getPostAuthPath } from './utils/authFlow';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import LoginPage from './pages/LoginPage';
 import OnboardingPage from './pages/OnboardingPage';
@@ -37,7 +38,7 @@ function AppFooter() {
 }
 
 function PublicOnly({ children }) {
-  const { user, loading, isOnboarded } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -48,7 +49,7 @@ function PublicOnly({ children }) {
   }
 
   if (user) {
-    return <Navigate to={isOnboarded ? '/' : '/onboarding'} replace />;
+    return <Navigate to={getPostAuthPath(profile)} replace />;
   }
 
   return children;

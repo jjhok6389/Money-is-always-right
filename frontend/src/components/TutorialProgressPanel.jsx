@@ -7,7 +7,7 @@ export default function TutorialProgressPanel({ detailed = false, compact = fals
   const completed = progress?.completedCount || 0;
   const nextChapter = TUTORIAL_CHAPTERS.find((chapter) => !progress?.chapters?.[chapter.id]?.completed);
   const pct = Math.round((completed / TUTORIAL_CHAPTERS.length) * 100);
-  const href = nextChapter ? `/tutorial/${nextChapter.id}` : '/tutorial';
+  const href = '/tutorial';
 
   if (compact) {
     const label = loading ? '불러오는 중…' : error ? '다시 시도' : `${pct}%`;
@@ -59,9 +59,9 @@ export default function TutorialProgressPanel({ detailed = false, compact = fals
 
           {!loading && (
             <div className="tutorial-widget-action">
-              <p>{nextChapter ? `다음 퀘스트 · ${nextChapter.title}` : '모든 금융기초 퀘스트를 완료했습니다.'}</p>
+              <p>{nextChapter ? '전체 목록에서 이어서 학습할 챕터를 선택해보세요.' : '모든 금융기초 퀘스트를 완료했습니다.'}</p>
               <Link to={href} className="btn btn-primary">
-                {nextChapter ? '이어하기' : '완료 내역 보기'}
+                전체 튜토리얼 보기
               </Link>
             </div>
           )}

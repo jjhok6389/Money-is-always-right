@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { isProfileOnboarded, useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { isFirebaseConfigured } from '../firebase/setupCheck';
+import { getPostAuthPath } from '../utils/authFlow';
 
 function mapAuthError(code) {
   const messages = {
@@ -39,8 +40,7 @@ export default function LoginPage() {
     try {
       await signIn(form);
       const latest = await refreshProfile();
-      // First-time users only → onboarding; returning users → dashboard.
-      navigate(isProfileOnboarded(latest) ? '/' : '/onboarding');
+      navigate(getPostAuthPath(latest));
     } catch (err) {
       setError(mapAuthError(err.code));
     } finally {

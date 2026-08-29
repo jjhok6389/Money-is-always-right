@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
+import InvestmentProfileTestModal from '../components/InvestmentProfileTestModal';
 import { useAuth } from '../contexts/AuthContext';
 import { saveUserProfile } from '../services/userService';
 
@@ -78,14 +79,20 @@ export default function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [linkPhase, setLinkPhase] = useState('idle'); // idle | linking | done
   const [linkProgress, setLinkProgress] = useState(0);
+  const [profileTestOpen, setProfileTestOpen] = useState(false);
 
   // Returning users who landed here due to a login race go to the dashboard.
   // MyPage "프로필 수정" uses /onboarding?edit=1 and stays here.
   useEffect(() => {
     if (!loading && isOnboarded && !isEdit) {
-      navigate('/', { replace: true });
+      navigate(
+        profile?.firstReportCompleted === false
+          ? '/coach-report?onboarding=1'
+          : '/',
+        { replace: true },
+      );
     }
-  }, [loading, isOnboarded, isEdit, navigate]);
+  }, [loading, isOnboarded, isEdit, navigate, profile?.firstReportCompleted]);
 
   useEffect(() => {
     if (profile || user) {
@@ -152,13 +159,13 @@ export default function OnboardingPage() {
     setStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const saveAndFinish = async (extra = {}) => {
+  const saveAndFinish = async (extra = {}, destination = '/') => {
     setSubmitting(true);
     setError('');
     try {
       await saveUserProfile(user.uid, profilePayload(extra));
       await refreshProfile();
-      navigate('/');
+      navigate(destination, { replace: true });
     } catch (err) {
       setError(err.message || '프로필 저장에 실패했습니다.');
       setLinkPhase('idle');
@@ -192,7 +199,8 @@ export default function OnboardingPage() {
         financialDataLinked: true,
         financialDataLinkedAt: new Date().toISOString(),
         financialDataSource: 'demo',
-      });
+        firstReportCompleted: false,
+      }, '/coach-report?onboarding=1');
     } catch (err) {
       setError(err.message || '연결에 실패했습니다. 다시 시도해 주세요.');
       setLinkPhase('idle');
@@ -299,6 +307,17 @@ export default function OnboardingPage() {
               <h2 className="section-title">투자 성향 · 목표 자산</h2>
               <fieldset className="propensity-grid">
                 <legend>투자 성향</legend>
+                <div className="propensity-test-entry">
+                  <span>내 성향이 헷갈린다면 간단한 진단으로 확인해 보세요.</span>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    aria-haspopup="dialog"
+                    onClick={() => setProfileTestOpen(true)}
+                  >
+                    내 투자성향 알아보기
+                  </button>
+                </div>
                 {INVESTMENT_TYPES.map((item) => (
                   <label key={item.value} className="propensity-option">
                     <input
@@ -443,6 +462,21 @@ export default function OnboardingPage() {
           </div>
         </form>
       </main>
+
+      {profileTestOpen && (
+        <InvestmentProfileTestModal
+          userFinancialData={{
+            age: form.age,
+            targetYears: form.targetYears,
+            currentAssets: profile?.currentAssets,
+            targetAssetAmount: form.targetAssetAmount,
+          }}
+          onClose={() => setProfileTestOpen(false)}
+          onSelectResult={(investmentPropensity) => {
+            setForm((previous) => ({ ...previous, investmentPropensity }));
+          }}
+        />
+      )}
     </div>
   );
 }

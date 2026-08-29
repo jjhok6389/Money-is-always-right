@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 const NAV_ITEMS = [
   {
     to: '/',
-    label: '대시보드',
+    label: '내 금융생활',
     match: '/dashboard', // 레거시 /dashboard 도 대시보드 메뉴로 판정
     icon: (
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

@@ -50,6 +50,36 @@ export default function TutorialPage() {
           </div>
         )}
 
+        {!loading && progress && (
+          <section className="tutorial-rewards" aria-labelledby="tutorial-rewards-title">
+            <div>
+              <p className="eyebrow">Demo 보상</p>
+              <h2 id="tutorial-rewards-title">완주 보상</h2>
+              <p className="muted">실제 쿠폰이나 금융상품이 아닌 해커톤 체험용 보상입니다.</p>
+            </div>
+            <div className="tutorial-reward-status">
+              <article className={progress.midpointReward.claimed ? 'is-claimed' : ''}>
+                <span className="tutorial-reward-milestone">3 / 6</span>
+                <div className="tutorial-reward-copy">
+                  <strong>선택형 Demo 쿠폰</strong>
+                  <small>{progress.midpointReward.claimed ? `수령 완료 · ${rewardLabel(progress.midpointReward.rewardId)}` : midpointReady ? '지금 받을 수 있어요' : '3개 챕터 완료 시 열림'}</small>
+                </div>
+                {midpointReady && <button type="button" className="btn btn-primary" onClick={() => setRewardDialog('midpoint')}>쿠폰 선택</button>}
+              </article>
+              <article className={progress.finalReward.claimed ? 'is-claimed' : ''}>
+                <span className="tutorial-reward-milestone">6 / 6</span>
+                <div className="tutorial-reward-copy">
+                  <strong>{FINAL_REWARD.label}</strong>
+                  <small>{progress.finalReward.claimed ? 'Demo 자산 수령 완료' : finalReady ? '지금 받을 수 있어요' : '전체 완료 시 열림'}</small>
+                </div>
+                {finalReady && <button type="button" className="btn btn-primary" onClick={() => setRewardDialog('final')}>최종 보상 받기</button>}
+              </article>
+            </div>
+          </section>
+        )}
+
+        {celebration && <p className="tutorial-celebration" role="status">✦ {celebration} 실제 자산이 아닌 Demo 보상입니다.</p>}
+
         <section className="tutorial-overview" aria-labelledby="tutorial-overview-title">
           <div className="tutorial-overview-copy">
             <p className="eyebrow">진행 상황</p>
@@ -86,35 +116,6 @@ export default function TutorialPage() {
           </ol>
         )}
 
-        {!loading && progress && (
-          <section className="tutorial-rewards" aria-labelledby="tutorial-rewards-title">
-            <div>
-              <p className="eyebrow">Demo 보상</p>
-              <h2 id="tutorial-rewards-title">완주 보상</h2>
-              <p className="muted">실제 쿠폰이나 금융상품이 아닌 해커톤 체험용 보상입니다.</p>
-            </div>
-            <div className="tutorial-reward-status">
-              <article className={progress.midpointReward.claimed ? 'is-claimed' : ''}>
-                <span className="tutorial-reward-milestone">3 / 6</span>
-                <div className="tutorial-reward-copy">
-                  <strong>선택형 Demo 쿠폰</strong>
-                  <small>{progress.midpointReward.claimed ? `수령 완료 · ${rewardLabel(progress.midpointReward.rewardId)}` : midpointReady ? '지금 받을 수 있어요' : '3개 챕터 완료 시 열림'}</small>
-                </div>
-                {midpointReady && <button type="button" className="btn btn-primary" onClick={() => setRewardDialog('midpoint')}>쿠폰 선택</button>}
-              </article>
-              <article className={progress.finalReward.claimed ? 'is-claimed' : ''}>
-                <span className="tutorial-reward-milestone">6 / 6</span>
-                <div className="tutorial-reward-copy">
-                  <strong>{FINAL_REWARD.label}</strong>
-                  <small>{progress.finalReward.claimed ? 'Demo 자산 수령 완료' : finalReady ? '지금 받을 수 있어요' : '전체 완료 시 열림'}</small>
-                </div>
-                {finalReady && <button type="button" className="btn btn-primary" onClick={() => setRewardDialog('final')}>최종 보상 받기</button>}
-              </article>
-            </div>
-          </section>
-        )}
-
-        {celebration && <p className="tutorial-celebration" role="status">✦ {celebration} 실제 자산이 아닌 Demo 보상입니다.</p>}
       </main>
 
       {rewardDialog && <TutorialRewardDialog kind={rewardDialog} saving={saving} onClaim={claimReward} onClose={() => setRewardDialog(null)} />}
