@@ -5,11 +5,11 @@ import test from 'node:test';
 const source = readFileSync(
   new URL('./PortfolioSimulationPanel.jsx', import.meta.url),
   'utf8',
-);
+).replace(/\r\n/g, '\n');
 const styles = readFileSync(
   new URL('../index.css', import.meta.url),
   'utf8',
-);
+).replace(/\r\n/g, '\n');
 
 test('설정 모달은 document.body 아래 portal로 렌더링한다', () => {
   assert.match(
