@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |------|------|
-| Base URL (로컬) | `http://localhost:8000` |
+| Base URL (로컬) | `http://localhost:8000` (Vite 프록시·일부 dev 환경은 `8001` 사용 가능) |
 | 버전 | `0.5.0` |
 | 문서(Swagger) | http://localhost:8000/docs |
 | 인증 | Firebase ID Token (`Authorization: Bearer <token>`) |
@@ -74,7 +74,7 @@ HTTP `401 Unauthorized`
 |------|-----|
 | `investmentPropensity` | `stable` (안정형), `stable_seeking` (안정추구형), `neutral` (위험중립형), `aggressive` (적극투자형), `very_aggressive` (공격투자형) |
 | `expenseType` | `fixed` (고정비), `variable` (변동비) |
-| `productType` | `deposit` (예금), `saving` (적금) |
+| `productType` | `deposit` (예금), `saving` (적금), `annuity` (연금저축) |
 | `category` | `food`, `transport`, `housing`, `telecom`, `shopping`, `leisure`, `medical`, `education`, `savings`, `income`, `other` |
 
 ---
@@ -279,7 +279,7 @@ Prefix: `/api/products`
 
 | 이름 | 타입 | 기본 | 설명 |
 |------|------|------|------|
-| `productType` | string | `saving` | `deposit` \| `saving` |
+| `productType` | string | `saving` | `deposit` \| `saving` \| `annuity` |
 | `topFinGrpNo` | string | env 기본 `020000` | 금융권역 (은행 `020000`, 저축은행 `030300`) |
 | `pageNo` | int | 1 | 1~50 |
 
@@ -332,8 +332,119 @@ Prefix: `/api/products`
 |--------|------|------|
 | GET | `/api/products/deposits` | 정기예금만 |
 | GET | `/api/products/savings` | 적금만 |
+| GET | `/api/products/annuities` | 연금저축만 |
 
 Query: `topFinGrpNo`, `pageNo` (동일)
+
+---
+
+## 5.1 ETF — 6개월 변동성 기반 추천
+
+Prefix: `/api/etf`
+
+| Method | Path | 설명 |
+|--------|------|------|
+| GET | `/api/etf/recommendations?propensity=` | 성향별 ETF 리스트. 안정형은 빈 배열, 안정추구는 초저 1~2개 |
+| GET | `/api/etf/{symbol}` | 상세 + 종가 시계열 + 배당 이벤트 + 추천 이유 |
+| POST | `/api/etf/sync` | KRX(또는 mock) 원장 갱신. 대시보드 요청 경로가 아님 |
+
+**`GET /api/etf/{symbol}` Query (선택)**
+
+| 이름 | 타입 | 설명 |
+|------|------|------|
+| `startDate` | string | `YYYY-MM-DD` — 과거 시뮬 시작일. 지정 시 yfinance 일별 시세 조회 |
+| `endDate` | string | `YYYY-MM-DD` — 종료일(기본: 오늘) |
+
+- `startDate`·`endDate`가 있으면 **yfinance** 일별 종가·배당을 우선 조회합니다(최대 3회 재시도).
+- yfinance 실패 시 Firestore/KRX에 저장된 시계열(`stored`)로 **fallback**하며 `source`는 `mock` 또는 `krx`로 반환됩니다.
+- Query 없이 호출하면 기존처럼 약 126영업일(6개월) `etfMetrics` 시계열을 반환합니다.
+
+**Response `source` 값:** `yfinance` | `krx` | `mock`
+
+- 요청 경로는 `etfMetrics`만 읽습니다. KRX는 sync 배치에서만 호출합니다.
+- 변동성 = 최근 약 126 영업일(6개월) 일간 수익률 표준편차 × √252 (연율화), UI 「6개월 변동성」
+- 버킷: 유니버스 상대 사분위 `ultra_low | low_mid | mid_high | high`
+- `KRX_AUTH_KEY` 없거나 401이면 `source=mock` (첫 401에서 즉시 중단)
+
+---
+
+## 5.5 Holdings — Demo 보유 원장 (잔액표)
+
+Prefix: `/api/holdings`
+
+거래(가계부)와 분리된 **계좌·대출·증권·보험** 스냅샷입니다. 대시보드 Gap·포트폴리오·부채 로드맵·시뮬레이션 시작 자산의 사용합니다. 향후 뱅크샐러드/마이데이터 어댑터로 교체 가능한 스키마입니다.
+
+### `GET /api/holdings/pipeline`
+
+**Query**
+
+| 이름 | 타입 | 기본 | 설명 |
+|------|------|------|------|
+| `asOf` | string | 당월 1일 | `YYYY-MM-DD` |
+
+**Response `200`**
+
+```json
+{
+  "userId": "firebaseUid",
+  "generatedAt": "2026-08-22T05:00:00Z",
+  "asOf": "2026-08-01",
+  "source": "mock",
+  "accounts": [
+    {
+      "id": "uid-acc-checking",
+      "institution": "카카오뱅크",
+      "accountName": "입출금 통장",
+      "accountType": "checking",
+      "balance": 1200000,
+      "rate": 0.1
+    }
+  ],
+  "loans": [
+    {
+      "id": "uid-loan-student",
+      "institution": "한국장학재단",
+      "loanName": "취업 후 상환 학자금",
+      "loanType": "student",
+      "balance": 8500000,
+      "interestRate": 2.9,
+      "monthlyPayment": 85000
+    }
+  ],
+  "investments": [
+    {
+      "id": "uid-inv-etf",
+      "broker": "키움증권",
+      "name": "KODEX 200",
+      "symbol": "069500",
+      "evalAmount": 800000
+    }
+  ],
+  "insurances": [
+    {
+      "id": "uid-ins-health",
+      "insurer": "삼성화재",
+      "productName": "실손의료보험",
+      "monthlyPremium": 95000,
+      "surrenderValue": 180000
+    }
+  ],
+  "totals": {
+    "cash": 1200000,
+    "deposit": 2000000,
+    "saving": 6300000,
+    "investment": 800000,
+    "insuranceSurrender": 180000,
+    "totalAssets": 10480000,
+    "totalLiabilities": 8500000,
+    "netWorth": 1980000
+  }
+}
+```
+
+### `POST /api/holdings/pipeline`
+
+시드·성향 지정 재생성. Body: `{ "asOf", "seed", "investmentPropensity" }`
 
 ---
 
@@ -361,9 +472,6 @@ Prefix: `/api/dashboard`
 {
   "profile": {
     "displayName": "홍길동",
-    "monthlyIncome": 3200000,
-    "fixedExpenses": 1500000,
-    "estimatedMonthlySavings": 700000,
     "investmentPropensity": "neutral",
     "targetAssetAmount": 50000000,
     "targetYears": 5,
@@ -371,8 +479,6 @@ Prefix: `/api/dashboard`
     "age": 28,
     "occupation": "직장인"
   },
-  "currentAssets": 5000000,
-  "debtBalance": 0,
   "month": "2026-08"
 }
 ```
@@ -380,9 +486,9 @@ Prefix: `/api/dashboard`
 | 필드 | 설명 |
 |------|------|
 | `profile` | 없으면 서버 저장 프로필 사용 |
-| `currentAssets` | 현재 자산(원). 없으면 저축여력×6개월 추정 |
-| `debtBalance` | 부채 잔액(원) |
-| `month` | 소비 파이프라인 기준월 `YYYY-MM` |
+| `month` | 소비·보유 파이프라인 기준월 `YYYY-MM` |
+
+자산·부채·포트폴리오는 `/api/holdings` Demo 보유 원장 합산으로 산출합니다 (수동 오버라이드 없음).
 
 **Response `200`**
 
@@ -391,8 +497,17 @@ Prefix: `/api/dashboard`
   "generatedAt": "2026-08-22T05:00:00Z",
   "month": "2026-08",
   "portfolio": [
-    { "key": "cash", "label": "현금·입출금", "amount": 1000000, "ratio": 0.2 }
+    { "key": "cash", "label": "현금·입출금", "amount": 1200000, "ratio": 0.12 }
   ],
+  "holdings": {
+    "source": "mock",
+    "asOf": "2026-08-01",
+    "totals": {
+      "totalAssets": 9800000,
+      "totalLiabilities": 8500000,
+      "netWorth": 1300000
+    }
+  },
   "consumption": [
     {
       "category": "food",
@@ -438,6 +553,20 @@ Prefix: `/api/dashboard`
       "reason": "수익과 안정의 균형을 위해 중기 적립을 권장합니다."
     }
   ],
+  "recommendedEtfs": [
+    {
+      "symbol": "153130",
+      "name": "KODEX 단기채권",
+      "volatility": 0.04,
+      "volatilityPct": 4.0,
+      "volatilityBucket": "low",
+      "change6mPct": 1.2,
+      "lastPrice": 105012.3,
+      "reason": "최근 6개월 일간 변동성이 동일 유니버스 대비 낮은 편이라 위험중립형 투자 비중에 맞습니다."
+    }
+  ],
+  "etfSource": "mock",
+  "etfMessage": "KRX_AUTH_KEY가 없어 모의 ETF 유니버스를 반환했습니다.",
   "debtRepaymentPriority": [
     {
       "priority": 1,
@@ -457,6 +586,16 @@ Prefix: `/api/simulation`
 
 월 적립액 = `(소득 − 지출) × 저축률(%)`  
 월복리로 자산 궤적을 투사하고, 기본 로드맵 vs 시나리오를 비교합니다.
+
+### 프론트 `/simulation` 페이지 (2탭)
+
+| 탭 | URL | 설명 |
+|----|-----|------|
+| 미래 시나리오 | `/simulation?mode=future` (기본) | `POST /api/simulation/from-profile` — 소득·지출·저축률 변경 시 미래 자산 궤적 비교 |
+| 과거 포트폴리오 | `/simulation?mode=portfolio` | 프론트 `portfolioSimulator.js` + `GET /api/etf/{symbol}?startDate=&endDate=` — 예·적금·ETF 과거 시뮬 |
+
+- 과거 탭 시작 자산: Demo `holdings.totals.totalAssets`가 기준(source of truth). 사용자가 직접 수정하면 `startingAssetsSource: manual`로 sessionStorage에 저장.
+- 과거 탭 ETF 시세: yfinance 성공 시 월말 종가 매수, 실패 시 stored/mock fallback(배너 표시).
 
 ### `POST /api/simulation/run`
 
@@ -561,7 +700,17 @@ baseline / scenario를 직접 전달.
 
 Prefix: `/api/coach`
 
-AWS Bedrock Converse 호출. 실패/키 없음 시 로컬 한국어 fallback.
+AWS Bedrock Converse 호출(toolConfig 기반 도구 사용). 실패/키 없음 시 동일한 도구를 쓰는 로컬 한국어 fallback.
+
+**에이전트 도구**
+
+| 도구 | 설명 |
+|------|------|
+| `get_financial_state` | 자산·목표 달성률·저축 여력·소비 요약 |
+| `search_products` | 금감원 공시 예·적금 최고금리순 검색 |
+| `run_scenario_simulation` | 가정 변경 시 미래 자산 비교 |
+| `get_roadmap` | 실행 단계·부채 상환 우선순위 |
+| `search_knowledge` | 상품 우대조건 원문·청년 정책금융·금융용어 검색 (RAG) |
 
 ### `POST /api/coach/chat`
 
@@ -597,14 +746,23 @@ AWS Bedrock Converse 호출. 실패/키 없음 시 로컬 한국어 fallback.
 
 ```json
 {
-  "reply": "안정형 성향 기준으로는 ...",
-  "source": "fallback",
-  "modelId": null,
+  "reply": "중도해지이율은 만기 전에 해지할 때 적용되는 이율입니다 ...",
+  "source": "bedrock",
+  "modelId": "anthropic.claude-3-haiku-20240307-v1:0",
   "suggestions": [
     "내 목표 달성까지 얼마나 걸릴까?",
     "안정형에게 맞는 적금 추천해줘",
-    "변동비를 줄이려면 어디부터 줄일까?",
-    "예금이랑 적금 중 뭐가 나을까?"
+    "저축률을 10% 올리면 어떻게 될까?",
+    "대출을 먼저 갚는 게 나을까?",
+    "이 적금 우대금리는 어떻게 받아?"
+  ],
+  "toolTrace": [
+    {
+      "name": "search_knowledge",
+      "label": "금융지식 검색",
+      "status": "ok",
+      "summary": "금융용어 문서 3건 (벡터+키워드)"
+    }
   ]
 }
 ```
@@ -613,6 +771,13 @@ AWS Bedrock Converse 호출. 실패/키 없음 시 로컬 한국어 fallback.
 |----------|------|
 | `bedrock` | AWS Bedrock 응답 |
 | `fallback` | 로컬 안내 모드 |
+
+`toolTrace` 는 이번 턴에 실행된 도구 목록이며 두 경로 모두에서 채워진다.
+`status` 는 `ok` \| `error`, `summary` 는 UI에 그대로 노출되는 한 줄 요약이다.
+
+`search_knowledge` 의 요약 괄호 안은 검색 방식(`벡터+키워드` \| `벡터` \| `키워드`)이며,
+검색 점수가 기준(`KNOWLEDGE_MIN_*_SCORE`) 미만이면 `, 신뢰도 낮음` 이 덧붙는다.
+신뢰도가 낮아도 문서는 그대로 모델에 전달되고, 모델이 질문과 맞는지 판단해 답한다.
 
 **Response `502`** — Bedrock 실패 + fallback 비활성
 

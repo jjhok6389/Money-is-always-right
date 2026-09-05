@@ -1,0 +1,62 @@
+"""
+ETF recommendation REST endpoints. Request path reads the ledger only.
+"""
+
+from datetime import date
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from app.dependencies import get_current_user
+from app.jobs.sync_etf import sync_etf
+from app.models.etf import EtfDetailResponse, EtfListResponse, EtfSyncResponse
+from app.services import etf_recommendation, krx_etf_client
+
+router = APIRouter()
+
+
+@router.get("/recommendations", response_model=EtfListResponse)
+async def list_etf_recommendations(
+    propensity: str = Query(default="neutral", description="investmentPropensity 키"),
+    current_user: dict = Depends(get_current_user),
+):
+    _ = current_user
+    raw = (propensity or "").strip()
+    if raw and raw not in etf_recommendation.VALID_PROPENSITIES:
+        propensity = "neutral"
+    return await etf_recommendation.recommend_etfs(propensity)
+
+
+@router.post("/sync", response_model=EtfSyncResponse)
+async def sync_etf_ledger(current_user: dict = Depends(get_current_user)):
+    _ = current_user
+    result = await sync_etf()
+    return EtfSyncResponse(**result)
+
+
+@router.get("/{symbol}", response_model=EtfDetailResponse)
+async def get_etf_detail(
+    symbol: str,
+    propensity: str = Query(default="neutral"),
+    startDate: date | None = Query(default=None),
+    endDate: date | None = Query(default=None),
+    current_user: dict = Depends(get_current_user),
+):
+    _ = current_user
+    code = (symbol or "").strip()
+    if not code:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="종목코드가 필요합니다.")
+
+    known = {item["symbol"] for item in krx_etf_client.list_universe()}
+    if code not in known:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="지원 유니버스에 없는 ETF 코드입니다.",
+        )
+    if endDate and startDate and endDate < startDate:
+        raise HTTPException(status_code=400, detail="종료일은 시작일 이후여야 합니다.")
+    return await etf_recommendation.get_etf_detail(
+        code,
+        propensity,
+        startDate.isoformat() if startDate else None,
+        endDate.isoformat() if endDate else None,
+    )

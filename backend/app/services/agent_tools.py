@@ -14,9 +14,17 @@ from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable
 
 from app.models.dashboard import DashboardRequest, DashboardResponse
+from app.models.knowledge import CATEGORY_LABELS, KnowledgeHit
 from app.models.product import ProductListResponse, ProductType
 from app.models.simulation import SimulationRequest
-from app.services import dashboard_service, fss_client, simulation_service
+from app.services import (
+    dashboard_service,
+    etf_knowledge,
+    etf_recommendation,
+    fss_client,
+    knowledge_service,
+    simulation_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +33,15 @@ TOOL_LABELS = {
     "search_products": "금융상품 탐색",
     "run_scenario_simulation": "시나리오 시뮬레이션",
     "get_roadmap": "로드맵 조회",
+    "search_etfs": "ETF 추천 조회",
+    "get_etf_detail": "ETF 상세 조회",
+    "search_etf_knowledge": "ETF 지식 검색",
+    "search_knowledge": "금융지식 검색",
+    "summarize_portfolio_simulation": "과거 포트폴리오 시뮬 안내",
 }
 
-# Onboarding does not collect assets/debt yet, so the dashboard estimates them.
-ASSET_ESTIMATE_BASIS = "온보딩에 자산 입력 항목이 없어 월 저축 여력 기준으로 추정한 값입니다."
+# Assets/debt come from holdings Demo (later MyData), not onboarding estimates.
+HOLDINGS_ASSET_BASIS = "Demo 보유 원장(계좌·투자·보험해지환급) 합산 기준입니다. 향후 마이데이터로 교체됩니다."
 
 
 @dataclass
@@ -39,6 +52,7 @@ class AgentContext:
     profile: dict[str, Any]
     _dashboard: DashboardResponse | None = None
     _products: dict[str, ProductListResponse] = field(default_factory=dict)
+    _knowledge: dict[tuple[str, str | None, int], list[KnowledgeHit]] = field(default_factory=dict)
 
     async def dashboard(self) -> DashboardResponse:
         if self._dashboard is None:
@@ -54,6 +68,17 @@ class AgentContext:
             self._products[product_type] = await fss_client.fetch_products(product_type)
         return self._products[product_type]
 
+    async def knowledge(
+        self,
+        query: str,
+        category: str | None,
+        limit: int,
+    ) -> list[KnowledgeHit]:
+        key = (query, category, limit)
+        if key not in self._knowledge:
+            self._knowledge[key] = await knowledge_service.search(query, category, limit)
+        return self._knowledge[key]
+
 
 # --- tool implementations -------------------------------------------------
 
@@ -64,8 +89,11 @@ async def _get_financial_state(_params: dict[str, Any], ctx: AgentContext) -> di
     return {
         "month": data.month,
         "currentAssets": goal.currentAssets,
-        "assetsEstimated": True,
-        "assetsEstimateBasis": ASSET_ESTIMATE_BASIS,
+        "assetsEstimated": False,
+        "assetsSource": data.holdings.source,
+        "assetsBasis": HOLDINGS_ASSET_BASIS,
+        "totalLiabilities": data.holdings.totals.totalLiabilities,
+        "netWorth": data.holdings.totals.netWorth,
         "targetAssetAmount": goal.targetAssetAmount,
         "gapAmount": goal.gapAmount,
         "achievementRate": goal.achievementRate,
@@ -84,7 +112,7 @@ async def _get_financial_state(_params: dict[str, Any], ctx: AgentContext) -> di
 
 async def _search_products(params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
     product_type = params.get("productType")
-    if product_type not in ("deposit", "saving"):
+    if product_type not in ("deposit", "saving", "annuity"):
         product_type = "saving"
     limit = max(1, min(int(params.get("limit") or 3), 5))
 
@@ -130,7 +158,12 @@ def _scenario_updates(params: dict[str, Any], baseline) -> dict[str, Any]:
 
 
 async def _run_scenario_simulation(params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
-    baseline = simulation_service.assumptions_from_profile(ctx.profile)
+    dashboard = await ctx.dashboard()
+    baseline = simulation_service.assumptions_from_financial_summary(
+        dashboard.financialSummary,
+        ctx.profile,
+        dashboard.goal.currentAssets,
+    )
     updates = _scenario_updates(params, baseline)
     scenario = baseline.model_copy(update=updates) if updates else baseline
 
@@ -157,6 +190,74 @@ async def _run_scenario_simulation(params: dict[str, Any], ctx: AgentContext) ->
     }
 
 
+def _propensity(ctx: AgentContext) -> str:
+    return etf_recommendation.normalize_propensity(
+        (ctx.profile or {}).get("investmentPropensity")
+    )
+
+
+async def _search_etfs(_params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
+    propensity = _propensity(ctx)
+    result = await etf_recommendation.recommend_etfs(propensity)
+    return {
+        "propensity": result.propensity,
+        "source": result.source,
+        "count": result.count,
+        "message": result.message,
+        "etfs": [
+            {
+                "symbol": item.symbol,
+                "name": item.name,
+                "vol60Pct": item.volatilityPct,
+                "bucket": item.volatilityBucket,
+                "volPercentile": item.volPercentile,
+                "universeSize": item.universeSize,
+                "riskLevel": item.riskLevel,
+                "riskLabel": item.riskLabel,
+                "change60Pct": item.change60Pct,
+                "lastPrice": item.lastPrice,
+                "reason": item.reason,
+                "asOfDate": item.asOfDate,
+            }
+            for item in result.etfs
+        ],
+        "disclaimer": "투자 권유 아님. 6개월 변동성은 과거 데이터이며 미래 수익이 아닙니다.",
+    }
+
+
+async def _get_etf_detail(params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
+    symbol = str(params.get("symbol") or "").strip()
+    if not symbol:
+        return {"error": "종목코드(symbol)가 필요합니다."}
+    detail = await etf_recommendation.get_etf_detail(symbol, _propensity(ctx))
+    etf = detail.etf
+    return {
+        "source": detail.source,
+        "message": detail.message,
+        "symbol": etf.symbol,
+        "name": etf.name,
+        "vol60Pct": etf.volatilityPct,
+        "bucket": etf.volatilityBucket,
+        "volPercentile": etf.volPercentile,
+        "universeSize": etf.universeSize,
+        "riskLevel": etf.riskLevel,
+        "riskLabel": etf.riskLabel,
+        "change60Pct": etf.change60Pct,
+        "lastPrice": etf.lastPrice,
+        "asOfDate": etf.asOfDate,
+        "reason": etf.reason,
+        "windowStart": etf.series[0].date if etf.series else None,
+        "windowEnd": etf.series[-1].date if etf.series else None,
+        "pointCount": len(etf.series),
+        "disclaimer": etf.disclaimer,
+    }
+
+
+async def _search_etf_knowledge(params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
+    query = str(params.get("query") or "").strip()
+    return etf_knowledge.retrieve_etf_knowledge(query, _propensity(ctx))
+
+
 async def _get_roadmap(_params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
     data = await ctx.dashboard()
     return {
@@ -176,11 +277,64 @@ async def _get_roadmap(_params: dict[str, Any], ctx: AgentContext) -> dict[str, 
     }
 
 
+async def _search_knowledge(params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
+    query = str(params.get("query") or "").strip()
+    if not query:
+        return {"error": "검색어(query)가 필요합니다."}
+
+    category = params.get("category")
+    if category not in CATEGORY_LABELS:
+        category = None
+    limit = max(1, min(int(params.get("limit") or 3), 5))
+
+    hits = await ctx.knowledge(query, category, limit)
+    return {
+        "query": query,
+        "category": category,
+        "matchType": hits[0].matchType if hits else None,
+        # 하나라도 high 면 high. 전부 low 면 근거로 쓰기에 약하다는 신호.
+        "bestConfidence": (
+            "high" if any(hit.confidence == "high" for hit in hits) else "low"
+        ) if hits else None,
+        "count": len(hits),
+        "documents": [
+            {
+                "title": hit.doc.title,
+                "confidence": hit.confidence,
+                "category": hit.doc.category,
+                "text": hit.doc.text,
+                "source": hit.doc.source,
+                "updatedAt": hit.doc.updatedAt,
+                "score": hit.score,
+            }
+            for hit in hits
+        ],
+    }
+
+
+async def _summarize_portfolio_simulation(params: dict[str, Any], ctx: AgentContext) -> dict[str, Any]:
+    """Stub: 과거 포트폴리오 시뮬은 프론트 /simulation?mode=portfolio 에서 계산."""
+    return {
+        "uiPath": "/simulation?mode=portfolio",
+        "message": (
+            "과거 포트폴리오 시뮬레이션은 앱의 「시뮬레이션 → 과거 포트폴리오」 탭에서 "
+            "예·적금·ETF 과거 시세로 계산합니다. 미래 시나리오와 달리 백엔드 API가 아닌 "
+            "브라우저에서 portfolioSimulator로 산출됩니다."
+        ),
+        "disclaimer": "과거 데이터 기반이며 미래 수익을 예측하지 않습니다.",
+    }
+
+
 _HANDLERS: dict[str, Callable[[dict[str, Any], AgentContext], Awaitable[dict[str, Any]]]] = {
     "get_financial_state": _get_financial_state,
     "search_products": _search_products,
     "run_scenario_simulation": _run_scenario_simulation,
     "get_roadmap": _get_roadmap,
+    "search_etfs": _search_etfs,
+    "get_etf_detail": _get_etf_detail,
+    "search_etf_knowledge": _search_etf_knowledge,
+    "search_knowledge": _search_knowledge,
+    "summarize_portfolio_simulation": _summarize_portfolio_simulation,
 }
 
 
@@ -192,7 +346,7 @@ TOOL_SPECS: list[dict[str, Any]] = [
             "name": "get_financial_state",
             "description": (
                 "사용자의 현재 금융상태를 조회한다. 자산 구성, 목표 자산 대비 부족액과 달성률, "
-                "월 저축 여력, 이번 달 소비 요약을 반환한다. 자산 금액은 추정값이다."
+                "월 저축 여력, 이번 달 소비 요약을 반환한다. 자산·부채는 Demo 보유 원장 합산이다."
             ),
             "inputSchema": {"json": {"type": "object", "properties": {}}},
         }
@@ -200,23 +354,22 @@ TOOL_SPECS: list[dict[str, Any]] = [
     {
         "toolSpec": {
             "name": "search_products",
-            "description": "금융감독원 공시 예·적금 상품을 최고금리 순으로 검색한다.",
+            "description": "금융감독원 공시 예·적금·연금저축 상품을 최고금리(또는 공시수익률) 순으로 검색한다.",
             "inputSchema": {
                 "json": {
                     "type": "object",
                     "properties": {
                         "productType": {
                             "type": "string",
-                            "enum": ["deposit", "saving"],
-                            "description": "deposit=정기예금, saving=적금. 기본값 saving",
+                            "enum": ["deposit", "saving", "annuity"],
+                            "description": "deposit=정기예금, saving=적금, annuity=연금저축. 기본값 saving",
                         },
                         "limit": {"type": "integer", "description": "반환 개수 1~5, 기본값 3"},
                     },
                 }
             },
         }
-    },
-    {
+    },    {
         "toolSpec": {
             "name": "run_scenario_simulation",
             "description": (
@@ -257,6 +410,81 @@ TOOL_SPECS: list[dict[str, Any]] = [
             "inputSchema": {"json": {"type": "object", "properties": {}}},
         }
     },
+    {
+        "toolSpec": {
+            "name": "search_etfs",
+            "description": (
+                "사용자 투자 성향에 맞는 ETF 추천 목록을 조회한다. "
+                "숫자는 저장된 6개월 변동성 지표이며, 안정형은 빈 목록이다. "
+                "투자 권유가 아니다."
+            ),
+            "inputSchema": {"json": {"type": "object", "properties": {}}},
+        }
+    },
+    {
+        "toolSpec": {
+            "name": "get_etf_detail",
+            "description": "특정 ETF의 6개월 변동성·유니버스 상대 분위·종가 요약을 조회한다. 숫자는 DB 값만 사용한다.",
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {
+                        "symbol": {"type": "string", "description": "종목코드, 예: 069500"},
+                    },
+                    "required": ["symbol"],
+                }
+            },
+        }
+    },
+    {
+        "toolSpec": {
+            "name": "search_etf_knowledge",
+            "description": (
+                "ETF 개념, 레버리지, NAV, 성향별 추천 정책, 면책을 검색한다. "
+                "변동성 숫자나 종가를 이 도구로 만들지 말고 search_etfs/get_etf_detail을 쓴다."
+            ),
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "사용자 질문 또는 검색어"},
+                    },
+                    "required": ["query"],
+                }
+            },
+        }
+    },
+    {
+        "toolSpec": {
+            "name": "search_knowledge",
+            "description": (
+                "금융 지식 문서를 검색한다. 상품 우대조건·가입대상 공시 원문, 청년 정책금융 자격요건, "
+                "금융 용어 설명을 근거와 함께 돌려준다. 수치가 아닌 '조건·자격·의미'를 묻는 질문에 사용한다. "
+                "ETF 개념·변동성 숫자는 search_etf_knowledge / search_etfs를 쓴다."
+            ),
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "검색할 자연어 질의. 사용자 질문을 그대로 넣어도 된다.",
+                        },
+                        "category": {
+                            "type": "string",
+                            "enum": ["glossary", "policy", "product_terms"],
+                            "description": (
+                                "glossary=금융용어, policy=청년 정책금융, "
+                                "product_terms=상품 공시조건. 생략하면 전체 검색"
+                            ),
+                        },
+                        "limit": {"type": "integer", "description": "반환 문서 수 1~5, 기본값 3"},
+                    },
+                    "required": ["query"],
+                }
+            },
+        }
+    },
 ]
 
 
@@ -285,11 +513,12 @@ def summarize(name: str, result: dict[str, Any]) -> str:
 
     if name == "get_financial_state":
         return (
-            f"추정 자산 {result['currentAssets']:,}원 · 달성률 {result['achievementRate']}% · "
+            f"Demo 보유 자산 {result['currentAssets']:,}원 · 달성률 {result['achievementRate']}% · "
             f"월 저축여력 {result['monthlySavingsCapacity']:,}원"
         )
     if name == "search_products":
-        type_label = "예금" if result["productType"] == "deposit" else "적금"
+        type_labels = {"deposit": "예금", "saving": "적금", "annuity": "연금저축"}
+        type_label = type_labels.get(result["productType"], "상품")
         source_label = "금감원 공시" if result["source"] == "fss" else "모의 데이터"
         return f"{type_label} {result['count']}건 조회 ({source_label})"
     if name == "run_scenario_simulation":
@@ -300,4 +529,21 @@ def summarize(name: str, result: dict[str, Any]) -> str:
         )
     if name == "get_roadmap":
         return f"실행 단계 {len(result['steps'])}개 · 부채 항목 {len(result['debtRepaymentPriority'])}개"
+    if name == "search_etfs":
+        return result.get("message") or f"ETF {result.get('count', 0)}건 (6개월 변동성)"
+    if name == "get_etf_detail":
+        return f"{result.get('name')} 6개월 변동성 {result.get('vol60Pct')}%"
+    if name == "search_etf_knowledge":
+        return f"ETF 지식 {len(result.get('chunks') or [])}건 ({result.get('source')})"
+    if name == "search_knowledge":
+        if not result["count"]:
+            return f"'{result['query']}' 관련 문서를 찾지 못했습니다."
+        scope = CATEGORY_LABELS.get(result["category"] or "", "전체")
+        mode = {"both": "벡터+키워드", "vector": "벡터", "keyword": "키워드"}.get(
+            result["matchType"], "검색"
+        )
+        note = "" if result["bestConfidence"] == "high" else ", 신뢰도 낮음"
+        return f"{scope} 문서 {result['count']}건 ({mode}{note})"
+    if name == "summarize_portfolio_simulation":
+        return result.get("message", "과거 포트폴리오 시뮬 안내")
     return "완료"

@@ -3,6 +3,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { getUserProfile } from '../services/userService';
 import * as authService from '../services/authService';
+import { isProfileOnboarded } from '../utils/authFlow';
 
 const AuthContext = createContext(null);
 
@@ -13,14 +14,23 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Keep routes loading until profile is fetched; otherwise login briefly sees
+      // profile=null and dumps completed users onto /onboarding.
+      setLoading(true);
       setUser(firebaseUser);
-      if (firebaseUser) {
-        const data = await getUserProfile(firebaseUser.uid);
-        setProfile(data);
-      } else {
+      try {
+        if (firebaseUser) {
+          const data = await getUserProfile(firebaseUser.uid);
+          setProfile(data);
+        } else {
+          setProfile(null);
+        }
+      } catch (error) {
+        console.warn('Failed to load user profile:', error);
         setProfile(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return unsubscribe;
@@ -41,7 +51,7 @@ export function AuthProvider({ children }) {
       user,
       profile,
       loading,
-      isOnboarded: Boolean(profile?.onboardingCompleted),
+      isOnboarded: isProfileOnboarded(profile),
       signUp: authService.signUp,
       signIn: authService.signIn,
       resetPassword: authService.resetPassword,

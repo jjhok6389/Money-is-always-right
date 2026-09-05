@@ -1,29 +1,57 @@
 """
 FastAPI entrypoint for Money is Always Right.
 Phase 1: user profiles via Firebase
-Phase 2: transaction pipeline + FSS deposit/savings products
+Phase 2: transaction pipeline + FSS deposit/savings/annuity products
 Phase 3: personalized dashboard & financial roadmap
 Phase 4: digital twin simulation
 Phase 5: AI financial coach (AWS Bedrock)
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import coach, dashboard, health, products, simulation, transactions, users
+from app.config import get_settings
+from app.routes import coach, dashboard, etf, health, holdings, personal_roadmap, products, reports, simulation, transactions, tutorial, users
+from app.services import etf_scheduler
+
+_DEFAULT_CORS_ORIGINS = (
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+)
+
+
+def _cors_origins() -> list[str]:
+    configured = [
+        origin.strip()
+        for origin in get_settings().cors_origins.split(",")
+        if origin.strip()
+    ]
+    return list(dict.fromkeys([*_DEFAULT_CORS_ORIGINS, *configured]))
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    etf_scheduler.start_etf_scheduler()
+    try:
+        yield
+    finally:
+        etf_scheduler.stop_etf_scheduler()
+
 
 app = FastAPI(
     title="Money is Always Right API",
     description="AI-driven financial coaching platform backend",
     version="0.5.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=_cors_origins(),
+    # Vercel 프로덕션·프리뷰 도메인
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,7 +60,12 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(transactions.router, prefix="/api/transactions", tags=["transactions"])
+app.include_router(holdings.router, prefix="/api/holdings", tags=["holdings"])
 app.include_router(products.router, prefix="/api/products", tags=["products"])
+app.include_router(etf.router, prefix="/api/etf", tags=["etf"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(simulation.router, prefix="/api/simulation", tags=["simulation"])
 app.include_router(coach.router, prefix="/api/coach", tags=["coach"])
+app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
+app.include_router(tutorial.router, prefix="/api/tutorial", tags=["tutorial"])
+app.include_router(personal_roadmap.router, prefix="/api/personal-roadmap", tags=["personal-roadmap"])

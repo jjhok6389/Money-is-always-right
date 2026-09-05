@@ -1,0 +1,125 @@
+/**
+ * Start coaching report generation with a loading interstitial, then open the player.
+ * Auto-starts once (module lock avoids React StrictMode double invoke).
+ */
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import AppHeader from '../components/AppHeader';
+import { useAuth } from '../contexts/AuthContext';
+import { generateReport } from '../services/reportService';
+
+const inflight = new Map();
+
+function buildProfilePayload(profile) {
+  if (!profile) return undefined;
+  return {
+    displayName: profile.displayName,
+    investmentPropensity: profile.investmentPropensity || 'neutral',
+    targetAssetAmount: Number(profile.targetAssetAmount) || 0,
+    targetYears: Number(profile.targetYears) || 1,
+    goalDescription: profile.goalDescription || '',
+    age: profile.age,
+    occupation: profile.occupation,
+  };
+}
+
+export default function CoachReportStartPage() {
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isFirstReportOnboarding =
+    searchParams.get('onboarding') === '1' && profile?.firstReportCompleted === false;
+  const [error, setError] = useState('');
+  const [starting, setStarting] = useState(!isFirstReportOnboarding);
+  const [hasStarted, setHasStarted] = useState(!isFirstReportOnboarding);
+  const type = searchParams.get('type') === 'monthly' ? 'monthly' : 'initial';
+  const lockKey = `${profile?.uid || 'anon'}:${type}`;
+
+  const runGenerate = async () => {
+    setStarting(true);
+    setError('');
+    try {
+      let promise = inflight.get(lockKey);
+      if (!promise) {
+        promise = generateReport({
+          type,
+          profile: buildProfilePayload(profile),
+        }).finally(() => {
+          inflight.delete(lockKey);
+        });
+        inflight.set(lockKey, promise);
+      }
+      const data = await promise;
+      const onboardingQuery = isFirstReportOnboarding ? '?onboarding=1' : '';
+      navigate(`/reports/play/${data.reportId}${onboardingQuery}`, { replace: true });
+    } catch (err) {
+      setError(err.message || '리포트 생성에 실패했습니다.');
+      setStarting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (hasStarted) runGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lockKey, hasStarted]);
+
+  if (isFirstReportOnboarding && !hasStarted) {
+    return (
+      <div className="page-shell report-shell">
+        <main className="page-content page-content-report">
+          <section className="first-report-intro">
+            <p className="eyebrow">가입 완료 · 첫 금융 진단</p>
+            <div className="first-report-intro-mark" aria-hidden="true">✓</div>
+            <h1>회원가입이 완료되었습니다!</h1>
+            <p className="lead">
+              입력한 정보와 연결된 Demo 금융 데이터를 바탕으로 현재 자산 상태를 분석해볼게요.
+            </p>
+            <p className="muted">
+              리포트와 대시보드는 동일한 사용자 금융 데이터를 사용합니다.
+            </p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setHasStarted(true)}
+            >
+              나의 첫 금융 리포트 보기
+            </button>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-shell report-shell">
+      {!isFirstReportOnboarding && <AppHeader />}
+      <main className="page-content page-content-report">
+        <section className="report-loading" role="status" aria-live="polite">
+          <p className="eyebrow">금융 코치</p>
+          <h1>
+            {starting
+              ? `${profile?.displayName || '회원'}님의 금융 이야기를 정리하고 있어요`
+              : '보고서를 만들지 못했습니다'}
+          </h1>
+          <p className="lead">
+            {starting
+              ? '대시보드 분석과 시뮬레이션을 준비하고 있습니다.'
+              : '잠시 후 다시 시도해 주세요.'}
+          </p>
+          {error && <p className="alert alert-error">{error}</p>}
+          {starting && <div className="report-loading-spinner" aria-hidden="true" />}
+          {!starting && (
+            <div className="hero-actions">
+              <button type="button" className="btn btn-primary" onClick={runGenerate}>
+                다시 시도
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => navigate('/reports')}>
+                목록으로
+              </button>
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}

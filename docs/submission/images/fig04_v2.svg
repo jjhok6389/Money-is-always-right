@@ -1,0 +1,183 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 1000 660"
+     width="100%"
+     role="img"
+     aria-label="재무 진단, 목표 Gap, What-if 시뮬레이션, 대화형 코칭으로 이어지는 순환 사이클">
+
+  <style>
+    .ko { font-family: 'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif; }
+    .title { font-size: 28px; font-weight: 700; fill: #1E3A5F; }
+    .sub { font-size: 18px; fill: #6B7684; }
+    .node-t { font-size: 21px; font-weight: 700; fill: #1E3A5F; }
+    .node-d { font-size: 16px; fill: #444C56; }
+    .core { font-size: 26px; font-weight: 700; fill: #FFFFFF; }
+    .core-s { font-size: 15px; fill: #A9BDD4; }
+    .step { font-size: 14px; font-weight: 700; fill: #2E7DD1; }
+  </style>
+
+  <rect x="0" y="0" width="1000" height="660" fill="#FFFFFF"/>
+
+  <text class="ko title" x="40" y="46">
+    핵심 컨셉 — 하나의 사이클로 연결되는 AI 금융 코치
+  </text>
+
+  <text class="ko sub" x="40" y="72">
+    상품 나열이 아니라, 진단에서 코칭까지 돌아가는 순환 구조
+  </text>
+
+  <defs>
+    <marker id="cyc"
+            markerWidth="10"
+            markerHeight="10"
+            refX="8"
+            refY="4"
+            orient="auto">
+      <path d="M2,0 L10,4 L2,8 Z" fill="#2E7DD1"/>
+    </marker>
+  </defs>
+
+  <!-- cycle arrows (orthogonal square loop) -->
+
+  <!-- STEP 1 → STEP 2 -->
+  <path d="M 660,192
+           L 826,192
+           L 826,314"
+        fill="none"
+        stroke="#2E7DD1"
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        marker-end="url(#cyc)"/>
+
+  <!-- STEP 2 → STEP 3 -->
+  <path d="M 826,418
+           L 826,548
+           L 668,548"
+        fill="none"
+        stroke="#2E7DD1"
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        marker-end="url(#cyc)"/>
+
+  <!-- STEP 3 → STEP 4 -->
+  <path d="M 340,548
+           L 174,548
+           L 174,426"
+        fill="none"
+        stroke="#2E7DD1"
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        marker-end="url(#cyc)"/>
+
+  <!-- STEP 4 → STEP 1 -->
+  <path d="M 174,322
+           L 174,192
+           L 332,192"
+        fill="none"
+        stroke="#2E7DD1"
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        marker-end="url(#cyc)"/>
+
+  <!-- center -->
+  <circle cx="500" cy="370" r="100" fill="#1E3A5F"/>
+
+  <text class="ko core"
+        x="500"
+        y="380"
+        text-anchor="middle">
+    AI 금융 코치
+  </text>
+
+  <!-- top node -->
+  <rect x="340" y="144" width="320" height="96"
+        rx="12"
+        fill="#F2F5F9"
+        stroke="#D7DFE8"
+        stroke-width="1.5"/>
+
+  <text class="ko"
+        x="360"
+        y="188"
+        font-size="21"
+        font-weight="700">
+    <tspan fill="#2E7DD1">STEP 1</tspan>
+    <tspan fill="#1E3A5F"> 재무 진단</tspan>
+  </text>
+
+  <text class="ko node-d"
+        x="360"
+        y="216">
+    재무 현황과 소비 구조 분석
+  </text>
+
+  <!-- right node -->
+  <rect x="676" y="322" width="300" height="96"
+        rx="12"
+        fill="#F2F5F9"
+        stroke="#D7DFE8"
+        stroke-width="1.5"/>
+
+  <text class="ko"
+        x="696"
+        y="366"
+        font-size="21"
+        font-weight="700">
+    <tspan fill="#2E7DD1">STEP 2</tspan>
+    <tspan fill="#1E3A5F"> 목표 Gap</tspan>
+  </text>
+
+  <text class="ko node-d"
+        x="696"
+        y="394">
+    부족액·달성률·달성 예상 시점 산출
+  </text>
+
+  <!-- bottom node -->
+  <rect x="340" y="500" width="320" height="96"
+        rx="12"
+        fill="#F2F5F9"
+        stroke="#D7DFE8"
+        stroke-width="1.5"/>
+
+  <text class="ko"
+        x="360"
+        y="544"
+        font-size="21"
+        font-weight="700">
+    <tspan fill="#2E7DD1">STEP 3</tspan>
+    <tspan fill="#1E3A5F"> What-if 시뮬레이션</tspan>
+  </text>
+
+  <text class="ko node-d"
+        x="360"
+        y="572">
+    디지털 트윈으로 행동 변경 결과 비교
+  </text>
+
+  <!-- left node -->
+  <rect x="24" y="322" width="300" height="96"
+        rx="12"
+        fill="#F2F5F9"
+        stroke="#D7DFE8"
+        stroke-width="1.5"/>
+
+  <text class="ko"
+        x="48"
+        y="366"
+        font-size="21"
+        font-weight="700">
+    <tspan fill="#2E7DD1">STEP 4</tspan>
+    <tspan fill="#1E3A5F"> 대화형 코칭</tspan>
+  </text>
+
+  <text class="ko node-d"
+        x="48"
+        y="394">
+    챗봇 상담·코칭 리포트로 행동 제안
+  </text>
+
+</svg>

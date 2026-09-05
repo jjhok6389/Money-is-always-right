@@ -1,12 +1,29 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { sendCoachMessage } from '../services/coachService';
 
 const WELCOME =
   '안녕하세요! AI 금융 코치입니다. 상품 비교, 가입 적합성, 로드맵 실행에 대해 한국어로 물어보세요.';
 
+const MIN_PANEL_WIDTH = 280;
+const MIN_PANEL_HEIGHT = 360;
+const DEFAULT_PANEL_WIDTH = 360;
+const DEFAULT_PANEL_HEIGHT = 520;
+const MAX_PANEL_WIDTH = 640;
+
+function clampPanelSize(width, height) {
+  const maxWidth = Math.min(MAX_PANEL_WIDTH, window.innerWidth - 32);
+  const maxHeight = window.innerHeight - 96;
+  return {
+    width: Math.min(maxWidth, Math.max(MIN_PANEL_WIDTH, width)),
+    height: Math.min(maxHeight, Math.max(MIN_PANEL_HEIGHT, height)),
+  };
+}
+
 export default function FloatingCoachChat() {
   const { user, profile, isOnboarded } = useAuth();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([{ role: 'assistant', content: WELCOME }]);
@@ -16,8 +33,15 @@ export default function FloatingCoachChat() {
     '변동비를 줄이려면 어디부터 줄일까?',
   ]);
   const [sending, setSending] = useState(false);
-  const [source, setSource] = useState(null);
+  const [panelSize, setPanelSize] = useState({
+    width: DEFAULT_PANEL_WIDTH,
+    height: DEFAULT_PANEL_HEIGHT,
+  });
   const listRef = useRef(null);
+
+  const hideOnReport =
+    location.pathname.startsWith('/coach-report') ||
+    location.pathname.startsWith('/reports/play');
 
   useEffect(() => {
     if (listRef.current) {
@@ -25,7 +49,7 @@ export default function FloatingCoachChat() {
     }
   }, [messages, open]);
 
-  if (!user || !isOnboarded) {
+  if (!user || !isOnboarded || hideOnReport) {
     return null;
   }
 
@@ -50,9 +74,6 @@ export default function FloatingCoachChat() {
               displayName: profile.displayName,
               age: profile.age,
               occupation: profile.occupation,
-              monthlyIncome: profile.monthlyIncome,
-              fixedExpenses: profile.fixedExpenses,
-              estimatedMonthlySavings: profile.estimatedMonthlySavings,
               investmentPropensity: profile.investmentPropensity,
               targetAssetAmount: profile.targetAssetAmount,
               targetYears: profile.targetYears,
@@ -64,7 +85,6 @@ export default function FloatingCoachChat() {
         ...prev,
         { role: 'assistant', content: response.reply, toolTrace: response.toolTrace ?? [] },
       ]);
-      setSource(response.source);
       if (response.suggestions?.length) {
         setSuggestions(response.suggestions);
       }
@@ -86,21 +106,47 @@ export default function FloatingCoachChat() {
     ask(input);
   };
 
+  const startResize = (event) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startWidth = panelSize.width;
+    const startHeight = panelSize.height;
+
+    const onMove = (moveEvent) => {
+      setPanelSize(
+        clampPanelSize(
+          startWidth - (moveEvent.clientX - startX),
+          startHeight - (moveEvent.clientY - startY),
+        ),
+      );
+    };
+
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
   return (
     <div className="coach-root">
       {open && (
-        <section className="coach-panel" aria-label="AI 금융 코치 채팅">
+        <section
+          className="coach-panel"
+          aria-label="AI 금융 코치 채팅"
+          style={{ width: panelSize.width, height: panelSize.height }}
+        >
+          <button
+            type="button"
+            className="coach-resize-handle"
+            aria-label="창 크기 조절"
+            onPointerDown={startResize}
+          />
           <header className="coach-header">
-            <div>
-              <strong>AI 금융 코치</strong>
-              <p>
-                {source === 'bedrock'
-                  ? 'AWS Bedrock 연결됨'
-                  : source === 'fallback'
-                    ? '로컬 안내 모드'
-                    : '상품·로드맵 상담'}
-              </p>
-            </div>
+            <strong>AI 금융 코치</strong>
             <button type="button" className="coach-close" onClick={() => setOpen(false)} aria-label="닫기">
               ×
             </button>
@@ -157,6 +203,7 @@ export default function FloatingCoachChat() {
       <button
         type="button"
         className="coach-fab"
+        data-tour="coach-fab"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
       >
