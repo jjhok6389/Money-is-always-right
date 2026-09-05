@@ -22,10 +22,23 @@ _demo_mode = False
 
 
 def _has_credentials(settings) -> bool:
+    if (settings.firebase_credentials_json or "").strip():
+        return True
     if settings.firebase_credentials_path and Path(settings.firebase_credentials_path).exists():
         return True
     env_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     return bool(env_path and Path(env_path).exists())
+
+
+def _certificate(settings):
+    raw = (settings.firebase_credentials_json or "").strip()
+    if raw:
+        import json
+
+        return credentials.Certificate(json.loads(raw))
+    if settings.firebase_credentials_path:
+        return credentials.Certificate(settings.firebase_credentials_path)
+    return None
 
 
 def init_firebase() -> None:
@@ -45,8 +58,8 @@ def init_firebase() -> None:
 
     try:
         if not firebase_admin._apps:
-            if settings.firebase_credentials_path:
-                cred = credentials.Certificate(settings.firebase_credentials_path)
+            cred = _certificate(settings)
+            if cred is not None:
                 firebase_admin.initialize_app(
                     cred,
                     {"projectId": settings.firebase_project_id or None},

@@ -23,8 +23,13 @@ class Settings(BaseSettings):
     # Absolute path to the Firebase service account JSON, or leave empty to
     # use GOOGLE_APPLICATION_CREDENTIALS / Application Default Credentials.
     firebase_credentials_path: str = ""
+    # Render 등 파일 업로드가 어려운 환경용: service account JSON 전체 문자열.
+    firebase_credentials_json: str = ""
     # When true and credentials are missing, use an in-memory store for local UI work.
     allow_demo_mode: bool = True
+    # Comma-separated browser origins allowed by CORS (plus localhost defaults).
+    # Example: https://money-is-always-right.vercel.app
+    cors_origins: str = ""
 
     # 금융감독원 금융상품한눈에 Open API
     # https://finlife.fss.or.kr/finlife/main/contents.do?menuNo=700029
