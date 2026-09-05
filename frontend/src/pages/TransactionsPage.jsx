@@ -68,7 +68,7 @@ export default function TransactionsPage() {
   return (
     <div className="page-shell">
       <AppHeader />
-      <main className="page-content page-content-xl">
+      <main className="page-content page-content-xl transactions-page">
         <section className="hero-panel">
           <p className="eyebrow">데이터 관리</p>
           <h1>소비 거래 분류</h1>

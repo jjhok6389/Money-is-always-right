@@ -59,7 +59,7 @@ export default function MyPage() {
   return (
     <div className="page-shell">
       <AppHeader />
-      <main className="page-content">
+      <main className="page-content page-content-xl mypage-page">
         <section className="hero-panel">
           <p className="eyebrow">마이페이지</p>
           <h1>{profile?.displayName || user?.displayName || '회원'}님</h1>
@@ -92,9 +92,75 @@ export default function MyPage() {
           )}
         </section>
 
-        <TutorialProgressPanel detailed />
+        <div className="mypage-workspace">
+          <TutorialProgressPanel detailed />
 
-        <section className="profile-summary">
+          <section className="profile-summary">
+            <h2>내 프로필</h2>
+            <p className="muted">소득·지출은 실제 금융기관 연동 전 생성된 월간 Demo 거래 기준입니다.</p>
+            <dl className="summary-grid">
+              <div>
+                <dt>이메일</dt>
+                <dd>{user?.email || profile?.email || '-'}</dd>
+              </div>
+              <div>
+                <dt>나이 / 직업</dt>
+                <dd>
+                  {profile?.age ? `${profile.age}세` : '-'} · {profile?.occupation || '-'}
+                </dd>
+              </div>
+              <div>
+                <dt>월 소득</dt>
+                <dd>{formatFinancialValue(financialSummary?.totalIncome, financialLoading, financialError)}</dd>
+              </div>
+              <div>
+                <dt>고정 생활비</dt>
+                <dd>
+                  {formatFinancialValue(
+                    financialSummary?.fixedLivingExpenses,
+                    financialLoading,
+                    financialError,
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>월 저축 여력</dt>
+                <dd>
+                  {formatFinancialValue(
+                    financialSummary?.monthlySavingsCapacity,
+                    financialLoading,
+                    financialError,
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>투자 성향</dt>
+                <dd>{PROPENSITY_LABELS[profile?.investmentPropensity] || '-'}</dd>
+              </div>
+              <div>
+                <dt>목표 자산</dt>
+                <dd>
+                  {Number(profile?.targetAssetAmount || 0).toLocaleString('ko-KR')}원
+                  {profile?.targetYears ? ` / ${profile.targetYears}년` : ''}
+                </dd>
+              </div>
+              <div>
+                <dt>월간 리포트일</dt>
+                <dd>
+                  {profile?.monthlyReportDay ? `매월 ${profile.monthlyReportDay}일` : '미설정'}
+                </dd>
+              </div>
+            </dl>
+            <p className="goal-note">목표: {profile?.goalDescription || '목표가 아직 없습니다.'}</p>
+            <p className="muted mypage-hint">
+              기본 정보·투자 성향·목표는 「프로필 수정」에서 변경할 수 있습니다.
+              <br />
+              소득·지출·자산·부채는 Demo 금융 데이터에서 자동 생성됩니다.
+            </p>
+          </section>
+        </div>
+
+        <section className="profile-summary mypage-holdings">
           <h2>Demo 보유 자산 · 부채</h2>
           <p className="muted">
             뱅크샐러드/마이데이터 연동 전 Demo 보유 원장입니다. 대시보드 Gap·포트폴리오·부채 로드맵에
@@ -193,70 +259,6 @@ export default function MyPage() {
               </div>
             </div>
           )}
-        </section>
-
-        <section className="profile-summary">
-          <h2>내 프로필</h2>
-          <p className="muted">소득·지출은 실제 금융기관 연동 전 생성된 월간 Demo 거래 기준입니다.</p>
-          <dl className="summary-grid">
-            <div>
-              <dt>이메일</dt>
-              <dd>{user?.email || profile?.email || '-'}</dd>
-            </div>
-            <div>
-              <dt>나이 / 직업</dt>
-              <dd>
-                {profile?.age ? `${profile.age}세` : '-'} · {profile?.occupation || '-'}
-              </dd>
-            </div>
-            <div>
-              <dt>월 소득</dt>
-              <dd>{formatFinancialValue(financialSummary?.totalIncome, financialLoading, financialError)}</dd>
-            </div>
-            <div>
-              <dt>고정 생활비</dt>
-              <dd>
-                {formatFinancialValue(
-                  financialSummary?.fixedLivingExpenses,
-                  financialLoading,
-                  financialError,
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt>월 저축 여력</dt>
-              <dd>
-                {formatFinancialValue(
-                  financialSummary?.monthlySavingsCapacity,
-                  financialLoading,
-                  financialError,
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt>투자 성향</dt>
-              <dd>{PROPENSITY_LABELS[profile?.investmentPropensity] || '-'}</dd>
-            </div>
-            <div>
-              <dt>목표 자산</dt>
-              <dd>
-                {Number(profile?.targetAssetAmount || 0).toLocaleString('ko-KR')}원
-                {profile?.targetYears ? ` / ${profile.targetYears}년` : ''}
-              </dd>
-            </div>
-            <div>
-              <dt>월간 리포트일</dt>
-              <dd>
-                {profile?.monthlyReportDay ? `매월 ${profile.monthlyReportDay}일` : '미설정'}
-              </dd>
-            </div>
-          </dl>
-          <p className="goal-note">목표: {profile?.goalDescription || '목표가 아직 없습니다.'}</p>
-          <p className="muted mypage-hint">
-            기본 정보·투자 성향·목표는 「프로필 수정」에서 변경할 수 있습니다.
-            <br />
-            소득·지출·자산·부채는 Demo 금융 데이터에서 자동 생성됩니다.
-          </p>
         </section>
       </main>
     </div>
