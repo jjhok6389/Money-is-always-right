@@ -28,10 +28,14 @@
 | Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
 | Health Check Path | `/health` |
 
+> **필수:** Environment에 `PYTHON_VERSION` = `3.12.8` 을 넣으세요.  
+> 기본값(3.14)이면 `pydantic-core` 빌드가 실패합니다. (`backend/.python-version`에도 3.12.8 고정)
+
 4. **Environment**에 넣을 값:
 
 | Key | 값 |
 |-----|-----|
+| `PYTHON_VERSION` | `3.12.8` (**필수**) |
 | `FIREBASE_PROJECT_ID` | Firebase 프로젝트 ID |
 | `FIREBASE_CREDENTIALS_JSON` | 서비스 계정 JSON **전체** (한 줄로 붙여넣기) |
 | `ALLOW_DEMO_MODE` | `true` (키 검증 실패 시에도 띄우려면) |
