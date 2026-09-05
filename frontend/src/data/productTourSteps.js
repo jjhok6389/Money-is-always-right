@@ -56,12 +56,51 @@ export const PRODUCT_TOUR_STEPS = [
   },
 ];
 
-/** Simulation page tour — separate from dashboard PRODUCT_TOUR_STEPS */
+/** First-time coaching for the historical portfolio settings modal. */
 export const SIMULATION_TOUR_STEPS = [
   {
-    id: 'sim-modes',
-    title: '미래 vs 과거 시뮬레이션',
-    body: '미래 시나리오는 저축·금리 가정을 바꿔 목표 달성 시점을 비교하고, 과거 포트폴리오는 실제 시장 데이터로 예·적금·ETF를 되돌려 봅니다.',
-    target: '.simulation-mode-tabs',
+    id: 'portfolio-period',
+    title: '기간 설정',
+    body: '언제부터 투자했는지가 되짚어 볼 과거 시장 구간을 정합니다.',
+    target: '[data-tour="portfolio-period"]',
+  },
+  {
+    id: 'portfolio-goal',
+    title: '목표 설정',
+    body: '시작 자산과 목표 금액이 성과와 목표 도달 여부를 판단하는 기준이 됩니다.',
+    target: '[data-tour="portfolio-goal"]',
+  },
+  {
+    id: 'portfolio-investment',
+    title: '투자 방식',
+    body: '월 투자액과 선택한 상품·배분 비율에 따라 같은 기간의 결과가 달라집니다.',
+    target: '[data-tour="portfolio-investment"]',
+  },
+];
+
+export const SIMULATION_RESULT_TOUR_STEPS = [
+  {
+    id: 'portfolio-settings',
+    title: '투자 설정',
+    body: '왼쪽 설정 영역과 설정 변경 버튼에서 시작일·자산·월 투자액·배분·선택 상품을 확인하고 다시 조정할 수 있어요.',
+    target: '[data-tour="simulation-settings"]',
+  },
+  {
+    id: 'goal-result',
+    title: '목표 달성 결과',
+    body: '모의 총자산, 목표 대비 초과·부족, 부채·순자산과 첫 달성일을 확인하세요. 과거 데이터 결과이며 미래 보장이 아닙니다.',
+    target: '[data-tour="simulation-goal-result"]',
+  },
+  {
+    id: 'trajectory',
+    title: '과거 포트폴리오 궤적',
+    body: '월별 자산 변화와 목표선, 상품별 흐름을 비교해 보세요. 과거 흐름을 보여 주는 결과입니다.',
+    target: '[data-tour="simulation-trajectory"]',
+  },
+  {
+    id: 'details',
+    title: '상세 정보',
+    body: '데이터·계산 기준, 예·적금 자산, ETF 투자 자산을 펼쳐 잔액·이자·수익·매수 대기금을 확인할 수 있어요.',
+    target: '[data-tour="simulation-details"]',
   },
 ];

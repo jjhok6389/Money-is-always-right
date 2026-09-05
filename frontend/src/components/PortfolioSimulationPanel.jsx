@@ -1,5 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import ProductTour from './ProductTour';
 import TrajectoryChart from './TrajectoryChart';
+import { SIMULATION_RESULT_TOUR_STEPS, SIMULATION_TOUR_STEPS } from '../data/productTourSteps';
 import { useAuth } from '../contexts/AuthContext';
 import { DEFAULT_TOP_FIN_GRP_NO } from '../constants/fss';
 import useFinancialSummary from '../hooks/useFinancialSummary';
@@ -12,11 +15,16 @@ import { summarizeLoans } from '../utils/debtSimulation';
 import { ALLOCATION_PRESETS, simulatePortfolio } from '../utils/portfolioSimulator';
 import {
   buildDefaultPortfolioSettings,
+  dismissPortfolioResultTour as persistPortfolioResultTourDismissal,
+  dismissPortfolioTour as persistPortfolioTourDismissal,
   loadPortfolioSettings,
   matchRecommendedProduct,
   productKey,
   savePortfolioSettings,
+  shouldShowPortfolioResultTour,
+  shouldShowPortfolioTour,
   todayIso,
+  validatePortfolioSettingsStep,
   yearsBefore,
 } from '../utils/portfolioSimulationSettings';
 
@@ -50,7 +58,7 @@ function productLabel(product) {
   return `${product.companyName} · ${product.productName} (${selected.saveTermMonths || 12}개월, ${selected.interestRate ?? product.bestRate ?? 0}%)`;
 }
 
-function normalizeSettings(raw, { startingAssets, propensity }) {
+function normalizeSettings(raw, { propensity }) {
   const preset = raw.preset === 'custom' ? 'custom' : (ALLOCATION_PRESETS[raw.preset] ? raw.preset : propensity);
   const etfRatio = propensity === 'stable'
     ? 0
@@ -68,19 +76,30 @@ function normalizeSettings(raw, { startingAssets, propensity }) {
 
 export default function PortfolioSimulationPanel({ onSwitchMode }) {
   const endDate = todayIso();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const { financialSummary, loading: financialLoading, error: financialError } = useFinancialSummary();
   const { holdings, loading: holdingsLoading, error: holdingsError } = useHoldingsSnapshot();
   const propensity = ALLOCATION_PRESETS[profile?.investmentPropensity] ? profile.investmentPropensity : 'neutral';
   const holdingsTotalAssets = Number(holdings?.totals?.totalAssets) || 0;
+  const hasSavedSettings = Boolean(loadPortfolioSettings(user?.uid));
 
   const [products, setProducts] = useState({ deposits: [], savings: [], etfs: [] });
   const [dashboardRecs, setDashboardRecs] = useState(null);
   const [selected, setSelected] = useState({ deposit: '', saving: '', etf: '' });
+  const [draftSelected, setDraftSelected] = useState({ deposit: '', saving: '', etf: '' });
   const [settings, setSettings] = useState(null);
   const [draft, setDraft] = useState(null);
-  const [modalOpen, setModalOpen] = useState(() => !loadPortfolioSettings());
+  const [modalOpen, setModalOpen] = useState(() => !hasSavedSettings);
+  const [settingsStep, setSettingsStep] = useState(1);
+  const [settingsError, setSettingsError] = useState('');
+  const [showPortfolioTour, setShowPortfolioTour] = useState(() => shouldShowPortfolioTour({
+    modalOpen: !hasSavedSettings,
+    hasSavedSettings,
+  }));
+  const [showPortfolioResultTour, setShowPortfolioResultTour] = useState(false);
   const [firstVisitHint, setFirstVisitHint] = useState(false);
+  const dialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
   const [etfData, setEtfData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
@@ -93,8 +112,45 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
   }, [holdingsTotalAssets]);
 
   useEffect(() => {
+    if (!modalOpen) return undefined;
+    const previouslyFocused = document.activeElement;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    if (!showPortfolioTour) closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event) => {
+      if (showPortfolioTour) return;
+      if (event.key === 'Escape' && settings) {
+        setSettingsError('');
+        setModalOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = dialogRef.current.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+      previouslyFocused?.focus?.();
+    };
+  }, [modalOpen, settings, showPortfolioTour]);
+
+  useEffect(() => {
     if (!financialSummary || holdingsLoading) return;
-    const saved = loadPortfolioSettings();
+    const saved = loadPortfolioSettings(user?.uid);
     let initial;
     if (saved) {
       initial = normalizeSettings(saved, { startingAssets: holdingsTotalAssets, propensity });
@@ -123,6 +179,7 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
     holdingsTotalAssets,
     profile,
     propensity,
+    user?.uid,
   ]);
 
   useEffect(() => {
@@ -131,9 +188,9 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
     const next = applyHoldingsStartingAssets(settings);
     setSettings(next);
     setDraft((current) => (current ? applyHoldingsStartingAssets(current) : current));
-    savePortfolioSettings(next);
+    savePortfolioSettings(next, user?.uid);
     setCalculationRun((current) => current + 1);
-  }, [applyHoldingsStartingAssets, holdingsTotalAssets, settings]);
+  }, [applyHoldingsStartingAssets, holdingsTotalAssets, settings, user?.uid]);
 
   useEffect(() => {
     let active = true;
@@ -156,11 +213,13 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
         || etfs[0]?.symbol
         || '';
 
-      setSelected({
+      const nextSelected = {
         deposit: matchRecommendedProduct(deposits, recDeposit),
         saving: matchRecommendedProduct(savings, recSaving),
         etf: recEtf,
-      });
+      };
+      setSelected(nextSelected);
+      setDraftSelected(nextSelected);
     }).catch((reason) => setError(reason.message || '상품 정보를 불러오지 못했습니다.'))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
@@ -219,9 +278,18 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
     });
   }, [settings, deposit, saving, etfData, endDate, holdings?.loans, monthlyCapacity]);
 
+  useEffect(() => {
+    if (!result || calculating || modalOpen) return;
+    setShowPortfolioResultTour(shouldShowPortfolioResultTour({
+      hasResult: true,
+      calculating,
+      modalOpen,
+    }));
+  }, [result, calculating, modalOpen]);
+
   const persistSettings = (rawDraft) => {
     const next = normalizeSettings(rawDraft, { startingAssets: holdingsTotalAssets, propensity });
-    savePortfolioSettings(next);
+    savePortfolioSettings(next, user?.uid);
     setCalculating(true);
     setCalculationRun((current) => current + 1);
     setSettings(next);
@@ -229,15 +297,40 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
     return next;
   };
 
+  const dismissPortfolioTour = () => {
+    setShowPortfolioTour(false);
+    persistPortfolioTourDismissal();
+  };
+
+  const dismissPortfolioResultTour = () => {
+    setShowPortfolioResultTour(false);
+    persistPortfolioResultTourDismissal();
+  };
+
+  const goSettingsNext = () => {
+    setSettingsError('');
+    setSettingsStep((current) => Math.min(current + 1, 3));
+  };
+
   const saveSettings = (event) => {
     event.preventDefault();
+    const firstError = [1, 2, 3]
+      .map((step) => ({ step, message: validatePortfolioSettingsStep(step, draft, endDate) }))
+      .find(({ message }) => message);
+    if (firstError) {
+      setSettingsStep(firstError.step);
+      setSettingsError(firstError.message);
+      return;
+    }
+    setSelected(draftSelected);
     persistSettings(draft);
+    setSettingsError('');
     setModalOpen(false);
     setFirstVisitHint(false);
   };
 
   const deferModal = () => {
-    const base = draft || buildDefaultPortfolioSettings({
+    const base = settings || buildDefaultPortfolioSettings({
       endDate,
       startingAssets: holdingsTotalAssets,
       profile,
@@ -246,12 +339,29 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
       startingAssetsSource: 'holdings',
     });
     persistSettings(base);
+    setSettingsError('');
     setModalOpen(false);
     setFirstVisitHint(true);
   };
 
   const closeModal = () => {
-    if (settings) setModalOpen(false);
+    if (settings) {
+      setSettingsError('');
+      setModalOpen(false);
+    }
+  };
+
+  const openSettings = () => {
+    setDraft(settings);
+    setDraftSelected(selected);
+    setSettingsStep(1);
+    setSettingsError('');
+    setModalOpen(true);
+  };
+
+  const selectSettingsStep = (nextStep) => {
+    setSettingsError('');
+    setSettingsStep(nextStep);
   };
 
   const setField = (name, value) => {
@@ -296,7 +406,7 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
     const next = applyHoldingsStartingAssets(settings);
     setSettings(next);
     setDraft(next);
-    savePortfolioSettings(next);
+    savePortfolioSettings(next, user?.uid);
     setCalculationRun((current) => current + 1);
   };
 
@@ -339,112 +449,277 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
 
   return (
     <>
-      {modalOpen && draft && (
-        <div className="sim-modal-backdrop" role="presentation">
-          <section className="sim-modal" role="dialog" aria-modal="true" aria-labelledby="sim-settings-title">
+      {modalOpen && draft && createPortal(
+        <div className="sim-modal-backdrop" role="presentation" onMouseDown={closeModal}>
+          <section
+            ref={dialogRef}
+            className="sim-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sim-settings-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
             <div className="sim-modal-header">
-              <h2 id="sim-settings-title">과거 시뮬레이션 설정</h2>
-              <button type="button" className="sim-modal-close" onClick={closeModal} aria-label="설정 닫기">×</button>
+              <div>
+                <p className="sim-modal-kicker">과거 포트폴리오</p>
+                <h2 id="sim-settings-title">과거 시뮬레이션 설정</h2>
+              </div>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                className="sim-modal-close"
+                onClick={closeModal}
+                aria-label="설정 닫기"
+              >
+                ×
+              </button>
             </div>
-            <form onSubmit={saveSettings} className="sim-modal-form">
-              <fieldset className="sim-date-presets">
-                <legend>과거 시작일 빠른 선택</legend>
-                <div className="toolbar">
-                  {START_DATE_PRESETS.map(({ years, label }) => (
-                    <button
-                      key={years}
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={() => applyStartPreset(years)}
-                    >
-                      {label} 전
+            <ol className="sim-settings-steps" aria-label="설정 단계">
+              {[{ step: 1, label: '기간 설정' }, { step: 2, label: '목표 설정' }, { step: 3, label: '투자 방식' }].map(({ step: itemStep, label }) => {
+                const current = settingsStep === itemStep;
+                return (
+                  <li
+                    key={itemStep}
+                    className={current ? ' is-current' : ''}
+                    aria-current={current ? 'step' : undefined}
+                    aria-label={`${label} ${current ? '현재 단계' : ''}`}
+                  >
+                    <button type="button" onClick={() => selectSettingsStep(itemStep)}>
+                      <strong>{itemStep}</strong><span>{label}</span>
                     </button>
-                  ))}
+                  </li>
+                );
+              })}
+            </ol>
+            <form onSubmit={saveSettings} className="sim-modal-form">
+              {settingsStep === 1 && (
+                <div className="sim-settings-stage" data-tour="portfolio-period">
+                  <div className="sim-settings-copy">
+                    <h3>기간 설정</h3>
+                    <p>어느 시점부터 투자했는지 알아야 같은 시장 흐름을 되짚어 볼 수 있어요.</p>
+                  </div>
+                  <fieldset className="sim-date-presets">
+                    <legend>과거 시작일 빠른 선택</legend>
+                    <div className="toolbar">
+                      {START_DATE_PRESETS.map(({ years, label }) => (
+                        <button
+                          key={years}
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => applyStartPreset(years)}
+                        >
+                          {label} 전
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <label>
+                    과거 시작일
+                    <input
+                      type="date"
+                      max={endDate}
+                      value={draft.startDate}
+                      onChange={(event) => setField('startDate', event.target.value)}
+                    />
+                  </label>
                 </div>
-              </fieldset>
-              <label>
-                과거 시작일
-                <input
-                  type="date"
-                  max={endDate}
-                  value={draft.startDate}
-                  onChange={(event) => setField('startDate', event.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                시작 자산
-                <input
-                  type="number"
-                  min="0"
-                  value={draft.startingAssets}
-                  onChange={(event) => setField('startingAssets', event.target.value)}
-                  required
-                />
-              </label>
-              <p className="muted sim-holdings-policy">
-                시작 자산의 기준은 Demo 보유 합산(holdings.totals.totalAssets)입니다.
-                직접 수정하면 수동 모드로 유지되며, 「Demo 기준으로 맞추기」로 다시 동기화할 수 있습니다.
-              </p>
-              <label>
-                목표 자산
-                <input
-                  type="number"
-                  min="0"
-                  value={draft.targetAssetAmount}
-                  onChange={(event) => setField('targetAssetAmount', event.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                월 투자 가능액
-                <input
-                  type="number"
-                  min="0"
-                  value={draft.monthlyInvestable}
-                  onChange={(event) => setField('monthlyInvestable', event.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                배분 방식
-                <select value={draft.preset} onChange={(event) => applyPreset(event.target.value)}>
-                  {Object.keys(ALLOCATION_PRESETS).map((key) => (
-                    <option key={key} value={key}>
-                      {PRESET_LABELS[key]} · ETF {ALLOCATION_PRESETS[key].etf}%
-                    </option>
-                  ))}
-                  <option value="custom">직접 설정</option>
-                </select>
-              </label>
-              <label>
-                ETF 비중 ({draft.etfRatio}%)
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={draft.etfRatio}
-                  disabled={isStable}
-                  onChange={(event) => {
-                    setField('etfRatio', event.target.value);
-                    setField('preset', 'custom');
-                  }}
-                />
-              </label>
-              {isStable && (
-                <p className="info-box sim-stable-note">안정형은 ETF 비중을 조정할 수 없습니다.</p>
               )}
-              <div className="toolbar">
-                <button type="button" className="btn btn-ghost" onClick={deferModal}>
-                  나중에
-                </button>
-                <button type="button" className="btn btn-ghost" onClick={closeModal}>취소</button>
-                <button type="submit" className="btn btn-primary">계산 시작</button>
+              {settingsStep === 2 && (
+                <div className="sim-settings-stage" data-tour="portfolio-goal">
+                  <div className="sim-settings-copy">
+                    <h3>목표 설정</h3>
+                    <p>시작 자산과 목표 금액을 알면 당시 선택이 목표에 얼마나 가까워졌는지 비교할 수 있어요.</p>
+                  </div>
+                  <label>
+                    시작 자산
+                    <input
+                      type="number"
+                      min="0"
+                      value={draft.startingAssets}
+                      onChange={(event) => setField('startingAssets', event.target.value)}
+                    />
+                  </label>
+                  <p className="muted sim-holdings-policy">
+                    시작 자산의 기준은 Demo 보유 합산(holdings.totals.totalAssets)입니다.
+                    직접 수정하면 수동 모드로 유지되며, 「Demo 기준으로 맞추기」로 다시 동기화할 수 있습니다.
+                  </p>
+                  <label>
+                    목표 자산
+                    <input
+                      type="number"
+                      min="0"
+                      value={draft.targetAssetAmount}
+                      onChange={(event) => setField('targetAssetAmount', event.target.value)}
+                    />
+                  </label>
+                </div>
+              )}
+              {settingsStep === 3 && (
+                <div className="sim-settings-stage" data-tour="portfolio-investment">
+                  <div className="sim-settings-copy">
+                    <h3>투자 방식</h3>
+                    <p>매달 넣을 금액과 예·적금·ETF의 비중을 정하면 같은 기간에 어떤 선택이었는지 비교할 수 있어요.</p>
+                  </div>
+                  <label>
+                    월 투자 가능액
+                    <input
+                      type="number"
+                      min="0"
+                      value={draft.monthlyInvestable}
+                      onChange={(event) => setField('monthlyInvestable', event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    배분 방식
+                    <select value={draft.preset} onChange={(event) => applyPreset(event.target.value)}>
+                      {Object.keys(ALLOCATION_PRESETS).map((key) => (
+                        <option key={key} value={key}>
+                          {PRESET_LABELS[key]} · ETF {ALLOCATION_PRESETS[key].etf}%
+                        </option>
+                      ))}
+                      <option value="custom">직접 설정</option>
+                    </select>
+                  </label>
+                  <label>
+                    ETF 비중 ({draft.etfRatio}%)
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={draft.etfRatio}
+                      disabled={isStable}
+                      onChange={(event) => {
+                        setField('etfRatio', event.target.value);
+                        setField('preset', 'custom');
+                      }}
+                    />
+                  </label>
+                  {isStable && (
+                    <p className="info-box sim-stable-note">안정형은 ETF 비중을 조정할 수 없습니다.</p>
+                  )}
+                  <p className="muted sim-etf-ratio-note">
+                    월 투자 가능액 중 ETF에 배분하는 비율이며, 나머지는 적금에 배분됩니다.
+                  </p>
+                  <section className="sim-controls" aria-label="모달 포트폴리오 상품 선택">
+                    <div className="sim-settings-copy">
+                      <h3>종목 선택</h3>
+                      <p>
+                        선택한 상품의 실제 금리와 과거 가격을 적용해 자산 흐름을 계산합니다.
+                        각 도움말에서 상품별 운용 방식을 확인하세요.
+                      </p>
+                    </div>
+                    <div className="sim-product-field">
+                      <span className="sim-product-label">
+                        <label htmlFor="sim-modal-deposit">예금</label>
+                        <span className="sim-product-help">
+                          <button type="button" aria-label="예금 운용 방식 설명" aria-describedby="sim-deposit-help">?</button>
+                          <span id="sim-deposit-help" role="tooltip">
+                            적금 만기금이 합쳐지는 예금 상품입니다. 이후 선택한 예금의 금리로 운용합니다.
+                          </span>
+                        </span>
+                      </span>
+                      <select
+                        id="sim-modal-deposit"
+                        value={draftSelected.deposit}
+                        disabled={calculating}
+                        onChange={(event) => setDraftSelected((current) => ({ ...current, deposit: event.target.value }))}
+                      >
+                        {products.deposits.map((item) => (
+                          <option key={productKey(item)} value={productKey(item)}>{productLabel(item)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="sim-product-field">
+                      <span className="sim-product-label">
+                        <label htmlFor="sim-modal-saving">적금</label>
+                        <span className="sim-product-help">
+                          <button type="button" aria-label="적금 운용 방식 설명" aria-describedby="sim-saving-help">?</button>
+                          <span id="sim-saving-help" role="tooltip">
+                            매달 선택한 적금에 납입합니다. 만기금은 예금으로 옮기고 같은 적금에 다시 가입합니다.
+                          </span>
+                        </span>
+                      </span>
+                      <select
+                        id="sim-modal-saving"
+                        value={draftSelected.saving}
+                        disabled={calculating}
+                        onChange={(event) => setDraftSelected((current) => ({ ...current, saving: event.target.value }))}
+                      >
+                        {products.savings.map((item) => (
+                          <option key={productKey(item)} value={productKey(item)}>{productLabel(item)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="sim-product-field">
+                      <span className="sim-product-label">
+                        <label htmlFor="sim-modal-etf">ETF</label>
+                        <span className="sim-product-help">
+                          <button type="button" aria-label="ETF 운용 방식 설명" aria-describedby="sim-etf-help">?</button>
+                          <span id="sim-etf-help" role="tooltip">
+                            ETF 배정액으로 선택 종목을 집중 매수합니다. 한 주를 사기에 부족한 금액은 ETF 전용 현금으로 이월합니다.
+                          </span>
+                        </span>
+                      </span>
+                      <select
+                        id="sim-modal-etf"
+                        value={draftSelected.etf}
+                        disabled={calculating || isStable || !draft.etfRatio}
+                        onChange={(event) => setDraftSelected((current) => ({ ...current, etf: event.target.value }))}
+                      >
+                        {(isStable || !draft.etfRatio) && <option value="">ETF 없음</option>}
+                        {products.etfs.map((item) => (
+                          <option key={item.symbol} value={item.symbol}>{item.name} ({item.symbol})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </section>
+                </div>
+              )}
+              {settingsError && <p className="alert alert-error" role="alert">{settingsError}</p>}
+              <div className="sim-settings-actions">
+                <div>
+                  <button type="button" className="btn btn-ghost" onClick={deferModal}>나중에</button>
+                  <button type="button" className="btn btn-ghost" onClick={closeModal}>취소</button>
+                </div>
+                <div>
+                  {settingsStep > 1 && (
+                    <button type="button" className="btn btn-ghost" onClick={() => {
+                      setSettingsError('');
+                      setSettingsStep((current) => current - 1);
+                    }}>
+                      이전
+                    </button>
+                  )}
+                  {settingsStep < 3 ? (
+                    <button type="button" className="btn btn-primary" onClick={goSettingsNext}>다음</button>
+                  ) : (
+                    <button type="submit" className="btn btn-primary">계산 시작</button>
+                  )}
+                </div>
               </div>
             </form>
           </section>
-        </div>
+        </div>,
+        document.body,
       )}
+
+      <ProductTour
+        ready={Boolean(draft)}
+        steps={SIMULATION_TOUR_STEPS}
+        active={showPortfolioTour && modalOpen && !hasSavedSettings && Boolean(draft)}
+        stepIndex={settingsStep - 1}
+        onDismiss={dismissPortfolioTour}
+        onStepChange={(stepIndex) => selectSettingsStep(stepIndex + 1)}
+        modifier="portfolio-settings"
+      />
+
+      <ProductTour
+        ready={Boolean(result)}
+        steps={SIMULATION_RESULT_TOUR_STEPS}
+        active={showPortfolioResultTour && !showPortfolioTour && Boolean(result) && !calculating && !modalOpen}
+        onDismiss={dismissPortfolioResultTour}
+        modifier="portfolio-result"
+      />
 
       {firstVisitHint && (
         <p className="info-box sim-first-visit-hint" role="status">
@@ -453,7 +728,7 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
       )}
 
       <div className="simulation-workspace">
-        <aside className="sim-settings-panel" aria-label="시뮬레이션 설정">
+        <aside className="sim-settings-panel" data-tour="simulation-settings" aria-label="시뮬레이션 설정">
           <div className="sim-settings-sticky">
             <div className="sim-settings-header">
               <div>
@@ -464,7 +739,7 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
                 type="button"
                 className="btn btn-ghost"
                 disabled={calculating}
-                onClick={() => { setDraft(settings); setModalOpen(true); }}
+                onClick={openSettings}
               >
                 설정 변경
               </button>
@@ -580,7 +855,7 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
 
           {!calculating && result && (
             <>
-              <section className={`sim-goal-result ${result.targetMet ? 'is-achieved' : 'is-pending'}`}>
+              <section className={`sim-goal-result ${result.targetMet ? 'is-achieved' : 'is-pending'}`} data-tour="simulation-goal-result">
                 <p className="sim-goal-status">{result.targetMet ? '✓ 목표 달성!' : '○ 목표까지 조금 더 필요해요'}</p>
                 <h2>{won(result.totalAssets)}</h2>
                 <p>현재 모의 총자산</p>
@@ -593,7 +868,7 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
                 </div>
               </section>
 
-              <section className="panel chart-panel">
+              <section className="panel chart-panel" data-tour="simulation-trajectory">
                 <h2>과거 포트폴리오 궤적</h2>
                 {settings.etfRatio > 0 && etfData?.source === 'yfinance' && (
                   <p className="source-banner live sim-chart-source-note">
@@ -612,7 +887,7 @@ export default function PortfolioSimulationPanel({ onSwitchMode }) {
                 />
               </section>
 
-              <div className="sim-detail-list">
+              <div className="sim-detail-list" data-tour="simulation-details">
                 <details className="sim-detail-card">
                   <summary>
                     <span>데이터 및 계산 기준</span>

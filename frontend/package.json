@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node --test src/utils/portfolioSimulator.test.js src/utils/investmentProfileAssessment.test.js src/utils/authFlow.test.js",
+    "test": "node --test src/components/PortfolioSimulationPanel.test.js src/components/ProductTour.test.js src/data/productTourSteps.test.js src/utils/portfolioSimulator.test.js src/utils/portfolioSimulationSettings.test.js src/utils/investmentProfileAssessment.test.js src/utils/authFlow.test.js",
     "lint": "oxlint",
     "preview": "vite preview"
   },
