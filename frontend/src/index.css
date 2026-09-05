@@ -117,6 +117,11 @@ textarea {
     margin-bottom: 4rem;
   }
 
+  .page-shell .page-content.simulation-page {
+    margin-left: 2rem;
+    margin-right: auto;
+  }
+
   .side-nav {
     display: flex;
     flex-direction: column;
@@ -1046,7 +1051,89 @@ textarea {
 }
 
 .page-content-xl {
-  width: min(960px, calc(100% - 2rem));
+  width: min(1120px, calc(100% - 2rem));
+  max-width: calc(100vw - 2rem);
+}
+
+.page-content-xl .lead {
+  max-width: 48rem;
+}
+
+/* 내 금융생활(대시보드) 흰 카드 제거 — 사용자가 「다시」라고 하면 이 블록과 dashboard-page--no-card 클래스 삭제 */
+.page-content.dashboard-page--no-card {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.mypage-workspace,
+.reports-workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.92fr) minmax(0, 1.08fr);
+  gap: 1.25rem;
+  align-items: start;
+  margin-top: 1.5rem;
+}
+
+.mypage-workspace .tutorial-widget {
+  margin: 0;
+  height: 100%;
+}
+
+.mypage-workspace .profile-summary,
+.reports-workspace .profile-summary {
+  margin-top: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.mypage-workspace .profile-summary h2,
+.reports-workspace .profile-summary h2 {
+  margin-top: 0;
+}
+
+.mypage-holdings {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.mypage-holdings h2 {
+  margin: 0;
+}
+
+.mypage-holdings .summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mypage-page .holdings-lists {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.transactions-page .toolbar {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+@media (max-width: 900px) {
+  .mypage-workspace,
+  .reports-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .mypage-page .holdings-lists,
+  .mypage-holdings .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .app-layout {
@@ -1331,7 +1418,7 @@ th {
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 0.9rem;
 }
 
@@ -1562,7 +1649,7 @@ th {
 }
 
 .modal-panel-wide {
-  width: min(960px, 100%);
+  width: min(1120px, 100%);
 }
 
 .products-compare-modal {
@@ -1661,8 +1748,30 @@ th {
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.25rem;
   margin-top: 0.5rem;
+}
+
+.dashboard-secondary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 1.25rem;
+  align-items: start;
+  margin-top: 1.25rem;
+}
+
+.dashboard-secondary-grid > .panel {
+  margin-top: 0;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+@media (max-width: 900px) {
+  .dashboard-secondary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .chart-panel {
@@ -1783,11 +1892,6 @@ th {
 .simulation-mode-tabs button:focus-visible {
   outline: 3px solid rgba(27, 58, 95, 0.28);
   outline-offset: 1px;
-}
-
-.page-content.simulation-page {
-  width: min(1120px, calc(100% - 2rem));
-  max-width: calc(100vw - 2rem);
 }
 
 .simulation-workspace {
@@ -2238,6 +2342,91 @@ th {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.sim-modal-header h2,
+.sim-modal-kicker {
+  margin: 0;
+}
+
+.sim-modal-kicker {
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+
+.sim-settings-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sim-settings-steps li > span,
+.sim-settings-steps button {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 2.9rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.sim-settings-steps button {
+  cursor: pointer;
+}
+
+.sim-settings-steps li > span strong,
+.sim-settings-steps button strong {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: var(--line);
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.sim-settings-steps .is-current > span,
+.sim-settings-steps .is-current button {
+  border-color: var(--accent);
+  background: rgba(27, 58, 95, 0.07);
+  color: var(--ink);
+}
+
+.sim-settings-steps .is-current strong {
+  background: var(--accent);
+  color: #fff;
+}
+
+.sim-settings-steps .is-complete > span,
+.sim-settings-steps .is-complete button {
+  border-color: rgba(6, 118, 71, 0.35);
+  color: var(--ink);
+}
+
+.sim-settings-steps .is-complete strong {
+  background: var(--success);
+  color: #fff;
+}
+
+.sim-settings-steps button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .sim-modal-close {
@@ -2266,13 +2455,124 @@ th {
 
 .sim-modal-form {
   display: grid;
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+.sim-settings-stage {
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+}
+
+.sim-settings-copy,
+.sim-date-presets,
+.sim-holdings-policy,
+.sim-etf-ratio-note,
+.sim-modal .sim-controls {
+  grid-column: 1 / -1;
+}
+
+.sim-settings-copy h3,
+.sim-settings-copy p {
+  margin: 0;
+}
+
+.sim-settings-copy h3 {
+  font-size: 1.1rem;
+}
+
+.sim-settings-copy p {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.sim-date-presets {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sim-date-presets .toolbar {
+  margin: 0;
 }
 
 .sim-modal-form label {
   display: grid;
   gap: 0.45rem;
+}
+
+.sim-product-field {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.sim-product-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sim-product-label label {
+  display: inline;
+}
+
+.sim-product-help {
+  display: inline-flex;
+}
+
+.sim-product-help button {
+  display: grid;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1;
+  cursor: help;
+}
+
+.sim-product-help [role='tooltip'] {
+  position: absolute;
+  z-index: 3;
+  bottom: calc(100% + 0.5rem);
+  left: 0;
+  width: min(17rem, 100%);
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.5;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(0.25rem);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.sim-product-help:hover [role='tooltip'],
+.sim-product-help:focus-within [role='tooltip'] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sim-product-help button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .sim-modal-form input,
@@ -2284,8 +2584,53 @@ th {
   background: #fff;
 }
 
+.sim-settings-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.sim-settings-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.sim-settings-actions > div:last-child {
+  margin-left: auto;
+}
+
+.sim-settings-actions .btn {
+  margin: 0;
+}
+
 .sim-modal-form .toolbar {
   grid-column: 1 / -1;
+}
+
+.sim-etf-ratio-note {
+  margin: -0.35rem 0 0;
+  font-size: 0.84rem;
+}
+
+.sim-modal .sim-controls {
+  margin: 0;
+}
+
+@media (max-height: 920px) and (min-width: 641px) {
+  .sim-modal {
+    padding: 1rem 1.25rem;
+  }
+
+  .sim-settings-stage {
+    gap: 0.75rem;
+  }
+
+  .sim-settings-copy p {
+    line-height: 1.4;
+  }
 }
 
 .insight-list {
@@ -2318,8 +2663,7 @@ th {
 }
 
 .coach-panel {
-  width: min(360px, calc(100vw - 2rem));
-  height: min(520px, calc(100vh - 6rem));
+  position: relative;
   display: grid;
   grid-template-rows: auto 1fr auto auto;
   background: rgba(255, 255, 255, 0.96);
@@ -2329,19 +2673,39 @@ th {
   overflow: hidden;
 }
 
+.coach-resize-handle {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  z-index: 2;
+  width: 0.85rem;
+  height: 0.85rem;
+  padding: 0;
+  border: 0;
+  border-top: 2px solid rgba(74, 85, 104, 0.5);
+  border-left: 2px solid rgba(74, 85, 104, 0.5);
+  border-radius: 3px 0 0 0;
+  background: transparent;
+  cursor: nwse-resize;
+}
+
+.coach-resize-handle:focus-visible {
+  outline: 2px solid rgba(27, 58, 95, 0.35);
+  outline-offset: 2px;
+}
+
 .coach-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.9rem 1rem;
+  padding: 0.9rem 1rem 0.9rem 1.85rem;
   border-bottom: 1px solid var(--line);
   background: rgba(27, 58, 95, 0.06);
 }
 
-.coach-header p {
-  margin: 0.2rem 0 0;
-  color: var(--muted);
-  font-size: 0.8rem;
+.coach-header strong {
+  font-size: 1rem;
 }
 
 .coach-close {
@@ -2446,9 +2810,9 @@ th {
 
 @media (min-width: 900px) {
   .app-footer {
-    width: min(960px, calc(100% - 15.5rem));
+    width: min(1120px, calc(100% - 15.5rem));
     margin-right: auto;
-    margin-left: calc(13.5rem + max(1rem, (100vw - 13.5rem - 960px) / 2));
+    margin-left: calc(13.5rem + max(1rem, (100vw - 13.5rem - 1120px) / 2));
   }
 
   .public-auth-layout .app-footer {
@@ -2458,7 +2822,9 @@ th {
 }
 
 @media (max-width: 640px) {
-  .summary-grid {
+  .summary-grid,
+  .mypage-holdings .summary-grid,
+  .mypage-page .holdings-lists {
     grid-template-columns: 1fr;
   }
 
@@ -2496,9 +2862,20 @@ th {
     grid-template-columns: 1fr;
   }
 
-  .sim-modal-form,
+  .sim-settings-stage,
   .sim-metric-grid {
     grid-template-columns: 1fr;
+  }
+
+  .sim-settings-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .sim-settings-actions > div,
+  .sim-settings-actions > div:last-child {
+    justify-content: space-between;
+    margin-left: 0;
   }
 
   .sim-detail-card summary {
@@ -4475,6 +4852,18 @@ th {
   opacity: 0.58;
 }
 
+@media (min-width: 900px) {
+  .tutorial-chapter-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1.5rem;
+    border-top: 0;
+  }
+
+  .tutorial-chapter-list li {
+    border-top: 1px solid var(--line);
+  }
+}
+
 .tutorial-rewards {
   display: grid;
   grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
@@ -5057,6 +5446,10 @@ th {
   inset: 0;
   z-index: 120;
   pointer-events: auto;
+}
+
+.product-tour.portfolio-settings {
+  z-index: 1010;
 }
 
 .product-tour-mask {

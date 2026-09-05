@@ -1,0 +1,36 @@
+# Render Blueprint — Backend API
+# Dashboard: New → Blueprint → 이 레포 연결
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: money-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: ALLOW_DEMO_MODE
+        value: "true"
+      - key: ETF_SYNC_SCHEDULER_ENABLED
+        value: "false"
+      - key: BEDROCK_FALLBACK_ENABLED
+        value: "true"
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CREDENTIALS_JSON
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: FSS_API_KEY
+        sync: false
+      - key: AWS_REGION
+        value: ap-northeast-2
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false

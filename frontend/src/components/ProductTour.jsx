@@ -138,28 +138,66 @@ function placeCard(spot, cardWidth, cardHeight) {
   };
 }
 
-export default function ProductTour({ ready }) {
+export default function ProductTour({
+  ready,
+  steps,
+  active: activeProp,
+  stepIndex: stepIndexProp,
+  onDismiss,
+  onStepChange,
+  modifier = '',
+}) {
   const { user, profile, refreshProfile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const forceTour = searchParams.get('tour') === '1';
   const [localDismiss, setLocalDismiss] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
+  const tourSteps = steps || PRODUCT_TOUR_STEPS;
   const [spot, setSpot] = useState(null);
   const [cardPos, setCardPos] = useState({ top: 0, left: 0 });
   const [cardReady, setCardReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const cardRef = useRef(null);
 
-  const active =
+  const dashboardActive =
     Boolean(ready) &&
     Boolean(user) &&
     Boolean(profile?.onboardingCompleted) &&
     !localDismiss &&
     (forceTour || !profile?.productTourDismissed);
+  const active = activeProp ?? dashboardActive;
 
-  const safeIndex = Math.min(stepIndex, PRODUCT_TOUR_STEPS.length - 1);
-  const step = PRODUCT_TOUR_STEPS[safeIndex];
-  const isLast = safeIndex >= PRODUCT_TOUR_STEPS.length - 1;
+  const currentStepIndex = stepIndexProp ?? stepIndex;
+  const safeIndex = Math.min(Math.max(currentStepIndex, 0), tourSteps.length - 1);
+  const step = tourSteps[safeIndex];
+  const isLast = safeIndex >= tourSteps.length - 1;
+
+  useLayoutEffect(() => {
+    if (!active) return undefined;
+    const previouslyFocused = document.activeElement;
+    cardRef.current?.focus();
+    const focusFrame = window.requestAnimationFrame(() => cardRef.current?.focus());
+    const trapFocus = (event) => {
+      if (event.key !== 'Tab' || !cardRef.current) return;
+      const focusable = cardRef.current.querySelectorAll('button:not([disabled])');
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === cardRef.current)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener('keydown', trapFocus);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener('keydown', trapFocus);
+      previouslyFocused?.focus?.();
+    };
+  }, [active, safeIndex]);
 
   useLayoutEffect(() => {
     if (!active || !step) return undefined;
@@ -185,10 +223,14 @@ export default function ProductTour({ ready }) {
     let targetRo = null;
     const observeTarget = () => {
       const targetEl = step.target ? findVisible(step.target) : null;
-      if (!targetEl || typeof ResizeObserver === 'undefined') return;
+      if (typeof ResizeObserver === 'undefined') return;
       targetRo?.disconnect();
       targetRo = new ResizeObserver(updateSpot);
-      targetRo.observe(targetEl);
+      if (targetEl) {
+        targetRo.observe(targetEl);
+        const pageContent = targetEl.closest('.page-content, .page-shell, .side-nav');
+        if (pageContent && pageContent !== targetEl) targetRo.observe(pageContent);
+      }
     };
     observeTarget();
     const observeTimer = window.setTimeout(observeTarget, 400);
@@ -266,22 +308,34 @@ export default function ProductTour({ ready }) {
     }
   };
 
+  const dismissExternal = () => {
+    setLocalDismiss(true);
+    onDismiss?.();
+  };
+
+  const changeStep = (nextIndex) => {
+    const next = Math.min(Math.max(nextIndex, 0), tourSteps.length - 1);
+    if (stepIndexProp == null) setStepIndex(next);
+    onStepChange?.(next);
+  };
+
   const goNext = () => {
     if (isLast) {
-      dismiss();
+      if (onDismiss) dismissExternal();
+      else dismiss();
       return;
     }
-    setStepIndex((i) => Math.min(i + 1, PRODUCT_TOUR_STEPS.length - 1));
+    changeStep(Math.min(safeIndex + 1, tourSteps.length - 1));
   };
 
   const goPrev = () => {
-    setStepIndex((i) => Math.max(i - 1, 0));
+    changeStep(Math.max(safeIndex - 1, 0));
   };
 
   if (!active || !step || typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="product-tour" role="dialog" aria-modal="true" aria-labelledby="product-tour-title">
+    <div className={`product-tour${modifier ? ` ${modifier}` : ''}`} role="dialog" aria-modal="true" aria-labelledby="product-tour-title">
       {!spot && <div className="product-tour-mask" aria-hidden="true" />}
       {spot && (
         <div
@@ -298,6 +352,7 @@ export default function ProductTour({ ready }) {
 
       <div
         ref={cardRef}
+        tabIndex="-1"
         className={`product-tour-card${cardReady ? '' : ' is-placing'}`}
         style={{
           top: cardPos.top,
@@ -306,7 +361,7 @@ export default function ProductTour({ ready }) {
         }}
       >
         <p className="product-tour-step">
-          {safeIndex + 1} / {PRODUCT_TOUR_STEPS.length}
+          {safeIndex + 1} / {tourSteps.length}
         </p>
         <h2 id="product-tour-title">{step.title}</h2>
         <p>{step.body}</p>
@@ -314,7 +369,7 @@ export default function ProductTour({ ready }) {
           <button
             type="button"
             className="btn btn-ghost product-tour-dismiss"
-            onClick={dismiss}
+            onClick={onDismiss ? dismissExternal : dismiss}
             disabled={saving}
           >
             다시 보지 않기

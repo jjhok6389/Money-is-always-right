@@ -12,8 +12,23 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.config import get_settings
 from app.routes import coach, dashboard, etf, health, holdings, personal_roadmap, products, reports, simulation, transactions, tutorial, users
 from app.services import etf_scheduler
+
+_DEFAULT_CORS_ORIGINS = (
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+)
+
+
+def _cors_origins() -> list[str]:
+    configured = [
+        origin.strip()
+        for origin in get_settings().cors_origins.split(",")
+        if origin.strip()
+    ]
+    return list(dict.fromkeys([*_DEFAULT_CORS_ORIGINS, *configured]))
 
 
 @asynccontextmanager
@@ -34,10 +49,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=_cors_origins(),
+    # Vercel 프로덕션·프리뷰 도메인
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
