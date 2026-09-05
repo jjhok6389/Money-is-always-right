@@ -185,10 +185,14 @@ export default function ProductTour({ ready }) {
     let targetRo = null;
     const observeTarget = () => {
       const targetEl = step.target ? findVisible(step.target) : null;
-      if (!targetEl || typeof ResizeObserver === 'undefined') return;
+      if (typeof ResizeObserver === 'undefined') return;
       targetRo?.disconnect();
       targetRo = new ResizeObserver(updateSpot);
-      targetRo.observe(targetEl);
+      if (targetEl) {
+        targetRo.observe(targetEl);
+        const pageContent = targetEl.closest('.page-content, .page-shell, .side-nav');
+        if (pageContent && pageContent !== targetEl) targetRo.observe(pageContent);
+      }
     };
     observeTarget();
     const observeTimer = window.setTimeout(observeTarget, 400);

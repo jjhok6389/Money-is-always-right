@@ -1046,7 +1046,89 @@ textarea {
 }
 
 .page-content-xl {
-  width: min(960px, calc(100% - 2rem));
+  width: min(1120px, calc(100% - 2rem));
+  max-width: calc(100vw - 2rem);
+}
+
+.page-content-xl .lead {
+  max-width: 48rem;
+}
+
+/* 내 금융생활(대시보드) 흰 카드 제거 — 사용자가 「다시」라고 하면 이 블록과 dashboard-page--no-card 클래스 삭제 */
+.page-content.dashboard-page--no-card {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.mypage-workspace,
+.reports-workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.92fr) minmax(0, 1.08fr);
+  gap: 1.25rem;
+  align-items: start;
+  margin-top: 1.5rem;
+}
+
+.mypage-workspace .tutorial-widget {
+  margin: 0;
+  height: 100%;
+}
+
+.mypage-workspace .profile-summary,
+.reports-workspace .profile-summary {
+  margin-top: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.mypage-workspace .profile-summary h2,
+.reports-workspace .profile-summary h2 {
+  margin-top: 0;
+}
+
+.mypage-holdings {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.mypage-holdings h2 {
+  margin: 0;
+}
+
+.mypage-holdings .summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mypage-page .holdings-lists {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.transactions-page .toolbar {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+@media (max-width: 900px) {
+  .mypage-workspace,
+  .reports-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .mypage-page .holdings-lists,
+  .mypage-holdings .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .app-layout {
@@ -1331,7 +1413,7 @@ th {
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 0.9rem;
 }
 
@@ -1562,7 +1644,7 @@ th {
 }
 
 .modal-panel-wide {
-  width: min(960px, 100%);
+  width: min(1120px, 100%);
 }
 
 .products-compare-modal {
@@ -1661,8 +1743,30 @@ th {
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.25rem;
   margin-top: 0.5rem;
+}
+
+.dashboard-secondary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 1.25rem;
+  align-items: start;
+  margin-top: 1.25rem;
+}
+
+.dashboard-secondary-grid > .panel {
+  margin-top: 0;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+@media (max-width: 900px) {
+  .dashboard-secondary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .chart-panel {
@@ -1783,11 +1887,6 @@ th {
 .simulation-mode-tabs button:focus-visible {
   outline: 3px solid rgba(27, 58, 95, 0.28);
   outline-offset: 1px;
-}
-
-.page-content.simulation-page {
-  width: min(1120px, calc(100% - 2rem));
-  max-width: calc(100vw - 2rem);
 }
 
 .simulation-workspace {
@@ -2318,8 +2417,7 @@ th {
 }
 
 .coach-panel {
-  width: min(360px, calc(100vw - 2rem));
-  height: min(520px, calc(100vh - 6rem));
+  position: relative;
   display: grid;
   grid-template-rows: auto 1fr auto auto;
   background: rgba(255, 255, 255, 0.96);
@@ -2329,19 +2427,39 @@ th {
   overflow: hidden;
 }
 
+.coach-resize-handle {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  z-index: 2;
+  width: 0.85rem;
+  height: 0.85rem;
+  padding: 0;
+  border: 0;
+  border-top: 2px solid rgba(74, 85, 104, 0.5);
+  border-left: 2px solid rgba(74, 85, 104, 0.5);
+  border-radius: 3px 0 0 0;
+  background: transparent;
+  cursor: nwse-resize;
+}
+
+.coach-resize-handle:focus-visible {
+  outline: 2px solid rgba(27, 58, 95, 0.35);
+  outline-offset: 2px;
+}
+
 .coach-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.9rem 1rem;
+  padding: 0.9rem 1rem 0.9rem 1.85rem;
   border-bottom: 1px solid var(--line);
   background: rgba(27, 58, 95, 0.06);
 }
 
-.coach-header p {
-  margin: 0.2rem 0 0;
-  color: var(--muted);
-  font-size: 0.8rem;
+.coach-header strong {
+  font-size: 1rem;
 }
 
 .coach-close {
@@ -2446,9 +2564,9 @@ th {
 
 @media (min-width: 900px) {
   .app-footer {
-    width: min(960px, calc(100% - 15.5rem));
+    width: min(1120px, calc(100% - 15.5rem));
     margin-right: auto;
-    margin-left: calc(13.5rem + max(1rem, (100vw - 13.5rem - 960px) / 2));
+    margin-left: calc(13.5rem + max(1rem, (100vw - 13.5rem - 1120px) / 2));
   }
 
   .public-auth-layout .app-footer {
@@ -2458,7 +2576,9 @@ th {
 }
 
 @media (max-width: 640px) {
-  .summary-grid {
+  .summary-grid,
+  .mypage-holdings .summary-grid,
+  .mypage-page .holdings-lists {
     grid-template-columns: 1fr;
   }
 
@@ -4473,6 +4593,18 @@ th {
 
 .tutorial-chapter-list li.is-locked {
   opacity: 0.58;
+}
+
+@media (min-width: 900px) {
+  .tutorial-chapter-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1.5rem;
+    border-top: 0;
+  }
+
+  .tutorial-chapter-list li {
+    border-top: 1px solid var(--line);
+  }
 }
 
 .tutorial-rewards {

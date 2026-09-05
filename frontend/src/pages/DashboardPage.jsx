@@ -152,7 +152,7 @@ export default function DashboardPage() {
   return (
     <div className="page-shell">
       <AppHeader />
-      <main className="page-content page-content-xl">
+      <main className="page-content page-content-xl dashboard-page dashboard-page--no-card">
         <section className="hero-panel hero-panel-with-action">
           <div className="hero-panel-copy">
             <p className="eyebrow">맞춤 금융 서비스</p>
@@ -346,59 +346,61 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <section className="panel">
-              <h2>ETF 추천</h2>
-              <p className="disclaimer-inline">
-                투자 권유 아님 · 과거 데이터 기반. 과거 변동 ≠ 미래 수익.
-              </p>
-              {!showEtfSection ? (
-                <p className="muted">
-                  {data.etfMessage ||
-                    '안정형은 예·적금·연금 중심이라 ETF 추천을 생략합니다.'}
+            <div className="dashboard-secondary-grid">
+              <section className="panel">
+                <h2>ETF 추천</h2>
+                <p className="disclaimer-inline">
+                  투자 권유 아님 · 과거 데이터 기반. 과거 변동 ≠ 미래 수익.
                 </p>
-              ) : (
-                <>
-                  <p className={`source-banner ${data.etfSource === 'krx' ? 'live' : 'mock'}`}>
-                    {data.etfSource === 'krx'
-                      ? `KRX 일별 공시 기반 · ${data.recommendedEtfs?.length || 0}개`
-                      : data.etfMessage ||
-                        `모의 ETF 데이터 · ${data.recommendedEtfs?.length || 0}개`}
+                {!showEtfSection ? (
+                  <p className="muted">
+                    {data.etfMessage ||
+                      '안정형은 예·적금·연금 중심이라 ETF 추천을 생략합니다.'}
                   </p>
-                  <div className="product-grid">
-                    {(data.recommendedEtfs || []).map((etf) => (
-                      <button
-                        type="button"
-                        key={etf.symbol}
-                        className="product-card etf-card"
-                        onClick={() => openEtfDetail(etf)}
-                      >
-                        <p className="product-bank">{etf.symbol}</p>
-                        <h2>{etf.name}</h2>
-                        <p className="product-note etf-risk-lines">{etfRiskCopy(etf)}</p>
-                      </button>
-                    ))}
-                  </div>
-                  {(data.recommendedEtfs || []).length === 0 && (
-                    <p className="muted">조건에 맞는 ETF가 없습니다.</p>
-                  )}
-                </>
-              )}
-            </section>
-
-            <section className="panel">
-              <h2>부채 상환 우선순위</h2>
-              <ol className="roadmap-list">
-                {data.debtRepaymentPriority.map((item) => (
-                  <li key={`debt-${item.priority}-${item.title}`}>
-                    <span className="roadmap-priority">{item.priority}</span>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <p>{item.detail}</p>
+                ) : (
+                  <>
+                    <p className={`source-banner ${data.etfSource === 'krx' ? 'live' : 'mock'}`}>
+                      {data.etfSource === 'krx'
+                        ? `KRX 일별 공시 기반 · ${data.recommendedEtfs?.length || 0}개`
+                        : data.etfMessage ||
+                          `모의 ETF 데이터 · ${data.recommendedEtfs?.length || 0}개`}
+                    </p>
+                    <div className="product-grid">
+                      {(data.recommendedEtfs || []).map((etf) => (
+                        <button
+                          type="button"
+                          key={etf.symbol}
+                          className="product-card etf-card"
+                          onClick={() => openEtfDetail(etf)}
+                        >
+                          <p className="product-bank">{etf.symbol}</p>
+                          <h2>{etf.name}</h2>
+                          <p className="product-note etf-risk-lines">{etfRiskCopy(etf)}</p>
+                        </button>
+                      ))}
                     </div>
-                  </li>
-                ))}
-              </ol>
-            </section>
+                    {(data.recommendedEtfs || []).length === 0 && (
+                      <p className="muted">조건에 맞는 ETF가 없습니다.</p>
+                    )}
+                  </>
+                )}
+              </section>
+
+              <section className="panel">
+                <h2>부채 상환 우선순위</h2>
+                <ol className="roadmap-list">
+                  {data.debtRepaymentPriority.map((item) => (
+                    <li key={`debt-${item.priority}-${item.title}`}>
+                      <span className="roadmap-priority">{item.priority}</span>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <p>{item.detail}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            </div>
           </>
         )}
       </main>
