@@ -117,11 +117,6 @@ textarea {
     margin-bottom: 4rem;
   }
 
-  .page-shell .page-content.simulation-page {
-    margin-left: 2rem;
-    margin-right: auto;
-  }
-
   .side-nav {
     display: flex;
     flex-direction: column;
